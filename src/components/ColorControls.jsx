@@ -1,16 +1,24 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { api } from '../api/client.js'
+import useDeviceParams from '../hooks/useDeviceParams.js'
+import { readNumber } from '../utils/paramUtils.js'
 
 export default function ColorControls() {
   const [color, setColor] = useState('#ffffff')
   const [brightness, setBrightness] = useState(128)
   const [message, setMessage] = useState('')
+  const { params } = useDeviceParams()
+
+  useEffect(() => {
+    if (!params) return
+    setBrightness(readNumber(params, 'brightness', 128))
+  }, [params])
 
   const applyColor = async () => {
     setMessage('')
     try {
       const hex = color.replace('#', '')
-      const result = await api.setColor(hex)
+      const result = await api.setColor(`FF${hex}`)
       setMessage(result)
     } catch (err) {
       setMessage(err.message || 'Failed to set color')

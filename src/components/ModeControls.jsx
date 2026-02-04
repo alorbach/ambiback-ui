@@ -1,5 +1,8 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { api } from '../api/client.js'
+import { useCapabilitiesContext } from '../contexts/CapabilitiesContext.jsx'
+import useDeviceParams from '../hooks/useDeviceParams.js'
+import { readNumber } from '../utils/paramUtils.js'
 
 const modes = [
   { value: 0, label: 'Off' },
@@ -13,6 +16,17 @@ const modes = [
 export default function ModeControls() {
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
+  const { caps } = useCapabilitiesContext()
+  const { params } = useDeviceParams()
+  const currentMode = readNumber(params, 'ledmode', null)
+
+  const availableModes = useMemo(() => {
+    return modes.filter((mode) => {
+      if (mode.value === 3 && !caps.camera) return false
+      if (mode.value === 4 && !caps.relay) return false
+      return true
+    })
+  }, [caps.camera, caps.relay])
 
   const setMode = async (mode) => {
     setLoading(true)
@@ -33,17 +47,19 @@ export default function ModeControls() {
         <h2>LED Mode</h2>
       </header>
       <div className="button-grid">
-        {modes.map((mode) => (
+        {availableModes.map((mode) => (
           <button
             key={mode.value}
             type="button"
             onClick={() => setMode(mode.value)}
             disabled={loading}
+            className={currentMode === mode.value ? 'active' : ''}
           >
             {mode.label}
           </button>
         ))}
       </div>
+      {currentMode != null && <div className="muted">Current mode: {currentMode}</div>}
       {message && <div className="muted">{message}</div>}
     </section>
   )

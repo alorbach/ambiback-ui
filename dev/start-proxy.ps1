@@ -74,6 +74,19 @@ events { worker_connections  1024; }
 
 http {
   access_log  $scriptDir/nginx-access.log;
+  types {
+    text/html html;
+    text/css css;
+    application/javascript js;
+    application/javascript mjs;
+    application/json json;
+    application/manifest+json webmanifest;
+    image/svg+xml svg;
+    image/png png;
+    image/x-icon ico;
+    text/plain txt;
+  }
+  default_type text/html;
   server {
     listen 80;
     server_name $UiHost;

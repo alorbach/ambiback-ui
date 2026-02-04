@@ -1,10 +1,15 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { api } from '../api/client.js'
 
-export default function ParamSetter() {
+export default function ParamSetter({ options = [] }) {
   const [param, setParam] = useState('')
   const [value, setValue] = useState('')
   const [message, setMessage] = useState('')
+
+  const selectOptions = useMemo(() => {
+    if (!options || options.length === 0) return []
+    return ['--select--', ...options]
+  }, [options])
 
   const submit = async () => {
     if (!param) {
@@ -27,13 +32,30 @@ export default function ParamSetter() {
       </header>
       <div className="form-grid">
         <label htmlFor="paramName">Param</label>
-        <input
-          id="paramName"
-          type="text"
-          placeholder="setbrightness"
-          value={param}
-          onChange={(event) => setParam(event.target.value)}
-        />
+        {selectOptions.length > 0 ? (
+          <select
+            id="paramName"
+            value={param || '--select--'}
+            onChange={(event) => {
+              const next = event.target.value
+              setParam(next === '--select--' ? '' : next)
+            }}
+          >
+            {selectOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <input
+            id="paramName"
+            type="text"
+            placeholder="setbrightness"
+            value={param}
+            onChange={(event) => setParam(event.target.value)}
+          />
+        )}
         <label htmlFor="paramValue">Value</label>
         <input
           id="paramValue"

@@ -64,6 +64,16 @@ export const api = {
   setColor: (hex) => requestText(`/setcolor?color=${encodeURIComponent(hex)}`),
   setParam: (param, value) =>
     requestText(`/setparam?param=${encodeURIComponent(param)}&value=${encodeURIComponent(value)}`),
+  setPreset: (param, value) =>
+    requestText(`/setpreset?param=${encodeURIComponent(param)}&value=${encodeURIComponent(value)}`),
+  refreshHueDevices: () => requestText('/refresh_hue_devices'),
+  refreshDreamscreenDevices: () => requestText('/refresh_dreamscreen_devices'),
+  addDreamscreenToNetwork: (ssid) =>
+    requestText(`/dreamscreenaddtonetwork?value=${encodeURIComponent(ssid)}`),
+  setCameraPoint: (point, left, top) =>
+    requestText(
+      `/setcamerapoint?point=${encodeURIComponent(point)}&left=${encodeURIComponent(left)}&top=${encodeURIComponent(top)}`,
+    ),
   reboot: () => requestText('/reboot?forreal=1'),
   startWps: () => requestText('/startwps?forreal=1'),
   updateUrl: () => buildUrl('/update'),
