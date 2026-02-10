@@ -3,12 +3,15 @@ import useDevice from '../hooks/useDevice.js'
 import useDeviceParams from '../hooks/useDeviceParams.js'
 import { api } from '../api/client.js'
 import { readBool, readNumber } from '../utils/paramUtils.js'
+import { applyDefaults } from '../utils/applyDefaults.js'
+import { CAMERA_DEFAULTS } from '../utils/paramDefaults.js'
 
 export default function CameraPage() {
   const { baseUrl } = useDevice()
-  const { params } = useDeviceParams()
+  const { params, refresh } = useDeviceParams()
   const [stamp, setStamp] = useState(Date.now())
   const [message, setMessage] = useState('')
+  const [resetting, setResetting] = useState(false)
   const [camMode, setCamMode] = useState(0)
   const [camPerformance, setCamPerformance] = useState(0)
   const [camResolution, setCamResolution] = useState(0)
@@ -158,7 +161,29 @@ export default function CameraPage() {
         </div>
       </section>
       <section className="card">
-        <h2>Camera Controls</h2>
+        <header className="card-header">
+          <h2>Camera Controls</h2>
+          <button
+            type="button"
+            className="button secondary"
+            disabled={resetting}
+            onClick={async () => {
+              setResetting(true)
+              setMessage('')
+              try {
+                await applyDefaults(CAMERA_DEFAULTS)
+                await refresh()
+                setMessage('Camera settings reset to defaults')
+              } catch (err) {
+                setMessage(err.message || 'Failed to reset camera settings')
+              } finally {
+                setResetting(false)
+              }
+            }}
+          >
+            {resetting ? 'Resetting…' : 'Reset to default'}
+          </button>
+        </header>
         <div className="form-grid">
           <label htmlFor="camMode">Mode</label>
           <select

@@ -66,4 +66,45 @@ cd D:\!cvsroot\_Misc\AmbiBack.Controller\ambiback-ui\dev
   is added, ensure the corresponding param exists or gate it accordingly.
 - Advanced Mode should hide risky actions (e.g., WPS, debug toggles) by default.
 - The local proxy defaults to GitHub Pages if no `dist/` exists or Node is too old.
+- Mobile navigation uses a drawer menu; it auto‑closes on link click.
+- Advanced Mode is session‑scoped (`sessionStorage`), not persisted across tabs.
+- Device URL can be injected via `?device=<ip>` and is stored in `localStorage`.
+- If the proxy fails to start, check ports 80/443 and nginx MIME types in `dev/`.
+
+---
+
+## Zusammenfassung der Optimierungen (UI)
+
+- **Capabilities-Gating**: Navigation und Seiten blenden sich abhängig von
+  `/getparamatersasjson` automatisch ein/aus.
+- **Advanced Mode**: Sensible Funktionen (WPS, Debug, WiFi Direct AP, Quick Param Set)
+  sind standardmäßig ausgeblendet und nur per Session‑Toggle sichtbar.
+- **System & Status**: Strukturierte Statusanzeige + Device Info + System‑Settings.
+- **LED Setup**: TV‑Rückseiten‑Preview, klickbare Seiten (grün/gray),
+  Richtungsanzeige (Start‑Pfeil + CW/CCW), sofortiges Anwenden ohne „Apply“.
+- **Responsive Layout**: Mobile‑Stacking für Top‑Controls, TV‑Preview skaliert,
+  Helligkeits‑Slider als einspaltiges Layout.
+
+## Grundlegende Design- und Layoutregeln
+
+1. **Konsistente Kartenstruktur**
+   - Jede Seite besteht aus Cards (`.card`) mit klaren Headings.
+   - Inputs nutzen konsistente Abstände und Labels über dem Feld.
+
+2. **Responsives Verhalten**
+   - Ab `max-width: 900px` stapeln sich Controls.
+   - TV‑Preview und Slider skalieren auf volle Breite.
+
+3. **Interaktive Elemente**
+   - TV‑Seiten sind klickbar (Toggle), Checkboxen für Seiten sind ausgeblendet.
+   - Slider/Selects ändern Werte direkt (keine zusätzlichen „Apply“-Buttons).
+
+4. **Farbcode für Zustände**
+   - **Grün** = aktiviert (z. B. TV‑Seiten)
+   - **Grau** = deaktiviert
+   - **Gelb** = Richtungs‑Overlay/Guide
+
+5. **Advanced Mode**
+   - Versteckt Debug/WPS und Low‑Level‑Parameter standardmäßig.
+   - UI‑Toggle ist session‑basiert (per `sessionStorage`).
 

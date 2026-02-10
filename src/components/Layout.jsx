@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import { useState } from 'react'
 import DeviceSelector from './DeviceSelector.jsx'
 import { useCapabilitiesContext } from '../contexts/CapabilitiesContext.jsx'
 import { useUiSettings } from '../contexts/UiSettingsContext.jsx'
@@ -16,11 +17,26 @@ const navItems = [
 export default function Layout({ children }) {
   const { caps, loading, error } = useCapabilitiesContext()
   const { advanced, setAdvanced } = useUiSettings()
+  const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const visibleItems = navItems.filter((item) => (loading ? item.cap !== 'camera' && item.cap !== 'hue' && item.cap !== 'dreamscreen' : caps[item.cap]))
 
   return (
     <div className="app-shell">
-      <aside className="sidebar">
+      <header className="mobile-header">
+        <div className="brand">
+          <div className="brand-title">AmbiBack</div>
+          <div className="brand-subtitle">Controller UI</div>
+        </div>
+        <button
+          type="button"
+          className="mobile-menu-button"
+          aria-expanded={mobileNavOpen}
+          onClick={() => setMobileNavOpen((prev) => !prev)}
+        >
+          ☰
+        </button>
+      </header>
+      <aside className={`sidebar ${mobileNavOpen ? 'sidebar-open' : ''}`}>
         <div className="brand">
           <div className="brand-title">AmbiBack</div>
           <div className="brand-subtitle">Controller UI</div>
@@ -33,15 +49,17 @@ export default function Layout({ children }) {
               key={item.to}
               to={item.to}
               className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+              onClick={() => setMobileNavOpen(false)}
             >
               {item.label}
             </NavLink>
           ))}
         </nav>
-      </aside>
-      <main className="content">
-        <div className="top-bar">
-          <div className="top-bar-title">Advanced Mode</div>
+        {loading && (
+          <div className="params-loading-hint muted">Loading settings…</div>
+        )}
+        <div className="nav-footer">
+          <div className="nav-footer-title">Advanced Mode</div>
           <label className="toggle checkbox">
             <input
               type="checkbox"
@@ -51,6 +69,14 @@ export default function Layout({ children }) {
             <span>Enable advanced controls</span>
           </label>
         </div>
+      </aside>
+      <main className="content">
+        {loading && (
+          <div className="params-loader-overlay" aria-busy="true" aria-live="polite">
+            <div className="params-loader-spinner" />
+            <p className="params-loader-text">Loading settings…</p>
+          </div>
+        )}
         {children}
       </main>
     </div>

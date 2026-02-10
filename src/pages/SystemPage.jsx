@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api } from '../api/client.js'
 import StatusCard from '../components/StatusCard.jsx'
 import ParamsViewer from '../components/ParamsViewer.jsx'
@@ -7,14 +7,17 @@ import useDeviceParams from '../hooks/useDeviceParams.js'
 import { readBool, readNumber, readString } from '../utils/paramUtils.js'
 import { useCapabilitiesContext } from '../contexts/CapabilitiesContext.jsx'
 import { useUiSettings } from '../contexts/UiSettingsContext.jsx'
+import { applyDefaults } from '../utils/applyDefaults.js'
+import { SYSTEM_DEFAULTS } from '../utils/paramDefaults.js'
 
 export default function SystemPage() {
   const [message, setMessage] = useState('')
   const [settingsMessage, setSettingsMessage] = useState('')
-  const [debugMessage, setDebugMessage] = useState('')
-  const { params } = useDeviceParams()
+  const [resetting, setResetting] = useState(false)
+  const { params, refresh } = useDeviceParams()
   const { caps } = useCapabilitiesContext()
   const { advanced } = useUiSettings()
+  const timersRef = useRef({})
 
   const paramOptions = [
     'setbrightness',
@@ -177,53 +180,19 @@ export default function SystemPage() {
     setRelayMode(readNumber(params, 'ambibackrelaymode', 1))
   }, [params])
 
-  const applyDeviceSettings = async () => {
-    setSettingsMessage('')
-    try {
-      await api.setParam('setdevicename', deviceName)
-      await api.setParam('setbuttonmode', buttonMode)
-      await api.setParam('setwififail', wifiFail)
-      setSettingsMessage('Device settings updated')
-    } catch (err) {
-      setSettingsMessage(err.message || 'Failed to update device settings')
+  const queueParam = (param, value, setStatus = setSettingsMessage) => {
+    if (timersRef.current[param]) {
+      clearTimeout(timersRef.current[param])
     }
-  }
-
-  const applyDebugSettings = async () => {
-    setDebugMessage('')
-    try {
-      await api.setParam('setdebugsyslogserver', debugSyslogServer)
-      await api.setParam('setdebugsyslogport', debugSyslogPort)
-      await api.setParam('setdebugserial', debugSerial ? 1 : 0)
-      await api.setParam('setdebugsyslog', debugSyslog ? 1 : 0)
-      await api.setParam('setdebugultra', debugUltra ? 1 : 0)
-      setDebugMessage('Debug settings updated')
-    } catch (err) {
-      setDebugMessage(err.message || 'Failed to update debug settings')
-    }
-  }
-
-  const applyWifiAp = async () => {
-    setSettingsMessage('')
-    try {
-      await api.setParam('setwifiapenable', wifiApEnabled ? 1 : 0)
-      setSettingsMessage('WiFi AP setting updated')
-    } catch (err) {
-      setSettingsMessage(err.message || 'Failed to update WiFi AP setting')
-    }
-  }
-
-  const applyRelaySettings = async () => {
-    setSettingsMessage('')
-    try {
-      await api.setParam('setrelaytarget', relayTarget)
-      await api.setParam('setrelaytodirect', relayDirect ? 1 : 0)
-      await api.setParam('setrelaywifidirect', relayWifiDirect ? 1 : 0)
-      await api.setParam('setrelaymode', relayMode)
-      setSettingsMessage('Relay settings updated')
-    } catch (err) {
-      setSettingsMessage(err.message || 'Failed to update relay settings')
-    }
+    timersRef.current[param] = setTimeout(async () => {
+      setStatus('')
+      try {
+        const result = await api.setParam(param, value)
+        setStatus(result)
+      } catch (err) {
+        setStatus(err.message || 'Failed to update setting')
+      }
+    }, 300)
   }
 
   return (
@@ -292,13 +261,21 @@ export default function SystemPage() {
             id="deviceName"
             type="text"
             value={deviceName}
-            onChange={(event) => setDeviceName(event.target.value)}
+            onChange={(event) => {
+              const next = event.target.value
+              setDeviceName(next)
+              queueParam('setdevicename', next)
+            }}
           />
           <label htmlFor="buttonMode">Button Function</label>
           <select
             id="buttonMode"
             value={buttonMode}
-            onChange={(event) => setButtonMode(Number(event.target.value))}
+            onChange={(event) => {
+              const next = Number(event.target.value)
+              setButtonMode(next)
+              queueParam('setbuttonmode', next)
+            }}
           >
             <option value={0}>Disabled</option>
             <option value={1}>Toggle Mode Off</option>
@@ -312,16 +289,39 @@ export default function SystemPage() {
           <select
             id="wifiFail"
             value={wifiFail}
-            onChange={(event) => setWifiFail(Number(event.target.value))}
+            onChange={(event) => {
+              const next = Number(event.target.value)
+              setWifiFail(next)
+              queueParam('setwififail', next)
+            }}
           >
             <option value={0}>Reconnect</option>
             <option value={1}>Reconnect/Reboot</option>
             <option value={2}>Reboot</option>
           </select>
         </div>
-        <button type="button" onClick={applyDeviceSettings}>
-          Apply Device Settings
-        </button>
+        <div className="button-row">
+          <button
+            type="button"
+            className="button secondary"
+            disabled={resetting}
+            onClick={async () => {
+              setResetting(true)
+              setSettingsMessage('')
+              try {
+                await applyDefaults(SYSTEM_DEFAULTS)
+                await refresh()
+                setSettingsMessage('Settings reset to defaults')
+              } catch (err) {
+                setSettingsMessage(err.message || 'Failed to reset settings')
+              } finally {
+                setResetting(false)
+              }
+            }}
+          >
+            {resetting ? 'Resetting…' : 'Reset to default'}
+          </button>
+        </div>
         {settingsMessage && <div className="muted">{settingsMessage}</div>}
       </section>
       {advanced && (
@@ -335,20 +335,32 @@ export default function SystemPage() {
               id="debugSyslogServer"
               type="text"
               value={debugSyslogServer}
-              onChange={(event) => setDebugSyslogServer(event.target.value)}
+              onChange={(event) => {
+                const next = event.target.value
+                setDebugSyslogServer(next)
+                queueParam('setdebugsyslogserver', next)
+              }}
             />
             <label htmlFor="debugSyslogPort">Syslog Port</label>
             <input
               id="debugSyslogPort"
               type="number"
               value={debugSyslogPort}
-              onChange={(event) => setDebugSyslogPort(Number(event.target.value))}
+              onChange={(event) => {
+                const next = Number(event.target.value)
+                setDebugSyslogPort(next)
+                queueParam('setdebugsyslogport', next)
+              }}
             />
             <label className="checkbox">
               <input
                 type="checkbox"
                 checked={debugSerial}
-                onChange={(event) => setDebugSerial(event.target.checked)}
+                onChange={(event) => {
+                  const next = event.target.checked
+                  setDebugSerial(next)
+                  queueParam('setdebugserial', next ? 1 : 0)
+                }}
               />
               Serial Debug
             </label>
@@ -356,7 +368,11 @@ export default function SystemPage() {
               <input
                 type="checkbox"
                 checked={debugSyslog}
-                onChange={(event) => setDebugSyslog(event.target.checked)}
+                onChange={(event) => {
+                  const next = event.target.checked
+                  setDebugSyslog(next)
+                  queueParam('setdebugsyslog', next ? 1 : 0)
+                }}
               />
               Syslog Debug
             </label>
@@ -364,15 +380,16 @@ export default function SystemPage() {
               <input
                 type="checkbox"
                 checked={debugUltra}
-                onChange={(event) => setDebugUltra(event.target.checked)}
+                onChange={(event) => {
+                  const next = event.target.checked
+                  setDebugUltra(next)
+                  queueParam('setdebugultra', next ? 1 : 0)
+                }}
               />
               Ultra Debug
             </label>
           </div>
-          <button type="button" onClick={applyDebugSettings}>
-            Apply Debug Settings
-          </button>
-          {debugMessage && <div className="muted">{debugMessage}</div>}
+          {settingsMessage && <div className="muted">{settingsMessage}</div>}
         </section>
       )}
       {advanced && caps.wifiAp && (
@@ -385,7 +402,11 @@ export default function SystemPage() {
               <input
                 type="checkbox"
                 checked={wifiApEnabled}
-                onChange={(event) => setWifiApEnabled(event.target.checked)}
+                onChange={(event) => {
+                  const next = event.target.checked
+                  setWifiApEnabled(next)
+                  queueParam('setwifiapenable', next ? 1 : 0)
+                }}
               />
               Enable WiFi Direct AP
             </label>
@@ -394,9 +415,6 @@ export default function SystemPage() {
             <label>Password</label>
             <input type="text" value={readString(params, 'deviceappass', '')} disabled />
           </div>
-          <button type="button" onClick={applyWifiAp}>
-            Apply WiFi AP Setting
-          </button>
           {settingsMessage && <div className="muted">{settingsMessage}</div>}
         </section>
       )}
@@ -411,13 +429,21 @@ export default function SystemPage() {
               id="relayTarget"
               type="text"
               value={relayTarget}
-              onChange={(event) => setRelayTarget(event.target.value)}
+              onChange={(event) => {
+                const next = event.target.value
+                setRelayTarget(next)
+                queueParam('setrelaytarget', next)
+              }}
             />
             <label className="checkbox">
               <input
                 type="checkbox"
                 checked={relayDirect}
-                onChange={(event) => setRelayDirect(event.target.checked)}
+                onChange={(event) => {
+                  const next = event.target.checked
+                  setRelayDirect(next)
+                  queueParam('setrelaytodirect', next ? 1 : 0)
+                }}
               />
               Fast Relay Mode
             </label>
@@ -425,7 +451,11 @@ export default function SystemPage() {
               <input
                 type="checkbox"
                 checked={relayWifiDirect}
-                onChange={(event) => setRelayWifiDirect(event.target.checked)}
+                onChange={(event) => {
+                  const next = event.target.checked
+                  setRelayWifiDirect(next)
+                  queueParam('setrelaywifidirect', next ? 1 : 0)
+                }}
               />
               WiFi Direct Mode
             </label>
@@ -433,20 +463,21 @@ export default function SystemPage() {
             <select
               id="relayMode"
               value={relayMode}
-              onChange={(event) => setRelayMode(Number(event.target.value))}
+              onChange={(event) => {
+                const next = Number(event.target.value)
+                setRelayMode(next)
+                queueParam('setrelaymode', next)
+              }}
             >
               <option value={1}>UDP</option>
               <option value={2}>TCP</option>
             </select>
           </div>
-          <button type="button" onClick={applyRelaySettings}>
-            Apply Relay Settings
-          </button>
           {settingsMessage && <div className="muted">{settingsMessage}</div>}
         </section>
       )}
       {advanced && <ParamSetter options={paramOptions} />}
-      <ParamsViewer />
+      {advanced && <ParamsViewer />}
     </div>
   )
 }

@@ -1,14 +1,20 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import ModeControls from '../components/ModeControls.jsx'
 import ColorControls from '../components/ColorControls.jsx'
 import ParamSetter from '../components/ParamSetter.jsx'
 import useDeviceParams from '../hooks/useDeviceParams.js'
 import { api } from '../api/client.js'
 import { readNumber } from '../utils/paramUtils.js'
+import { useUiSettings } from '../contexts/UiSettingsContext.jsx'
+import { applyDefaults } from '../utils/applyDefaults.js'
+import { COLOR_MOTION_DEFAULTS } from '../utils/paramDefaults.js'
 
 export default function ColorMotionPage() {
-  const { params } = useDeviceParams()
+  const { params, refresh } = useDeviceParams()
   const [message, setMessage] = useState('')
+  const [resetting, setResetting] = useState(false)
+  const { advanced } = useUiSettings()
+  const timersRef = useRef({})
 
   const [colorPreset, setColorPreset] = useState(1)
   const [brightnessPreset, setBrightnessPreset] = useState(1)
@@ -53,35 +59,41 @@ export default function ColorMotionPage() {
     setFrameDelay(readNumber(params, 'framedelay', 40))
   }, [params])
 
-  const applyParams = async (pairs) => {
-    setMessage('')
-    try {
-      for (const [param, value] of pairs) {
-        await api.setParam(param, value)
-      }
-      setMessage('Settings updated')
-    } catch (err) {
-      setMessage(err.message || 'Failed to update settings')
+  const queueParam = (param, value) => {
+    if (timersRef.current[param]) {
+      clearTimeout(timersRef.current[param])
     }
+    timersRef.current[param] = setTimeout(async () => {
+      setMessage('')
+      try {
+        const result = await api.setParam(param, value)
+        setMessage(result)
+      } catch (err) {
+        setMessage(err.message || 'Failed to update settings')
+      }
+    }, 300)
   }
 
-  const applyPresets = async () => {
-    setMessage('')
-    try {
-      await api.setPreset('setcolorpreset', colorPreset)
-      await api.setPreset('setbrightnesspreset', brightnessPreset)
-      await api.setPreset('setmotionpreset', motionPreset)
-      setMessage('Presets updated')
-    } catch (err) {
-      setMessage(err.message || 'Failed to update presets')
+  const queuePreset = (param, value) => {
+    if (timersRef.current[param]) {
+      clearTimeout(timersRef.current[param])
     }
+    timersRef.current[param] = setTimeout(async () => {
+      setMessage('')
+      try {
+        const result = await api.setPreset(param, value)
+        setMessage(result)
+      } catch (err) {
+        setMessage(err.message || 'Failed to update presets')
+      }
+    }, 300)
   }
 
   return (
     <div className="page">
       <h1>Color & Motion</h1>
+      <ModeControls />
       <div className="card-grid">
-        <ModeControls />
         <ColorControls />
       </div>
       <section className="card">
@@ -93,7 +105,11 @@ export default function ColorMotionPage() {
           <select
             id="colorPreset"
             value={colorPreset}
-            onChange={(event) => setColorPreset(Number(event.target.value))}
+            onChange={(event) => {
+              const next = Number(event.target.value)
+              setColorPreset(next)
+              queuePreset('setcolorpreset', next)
+            }}
           >
             <option value={1}>Normal</option>
             <option value={2}>Colorful</option>
@@ -105,7 +121,11 @@ export default function ColorMotionPage() {
           <select
             id="brightnessPreset"
             value={brightnessPreset}
-            onChange={(event) => setBrightnessPreset(Number(event.target.value))}
+            onChange={(event) => {
+              const next = Number(event.target.value)
+              setBrightnessPreset(next)
+              queuePreset('setbrightnesspreset', next)
+            }}
           >
             <option value={1}>Low</option>
             <option value={2}>Medium</option>
@@ -119,7 +139,11 @@ export default function ColorMotionPage() {
           <select
             id="motionPreset"
             value={motionPreset}
-            onChange={(event) => setMotionPreset(Number(event.target.value))}
+            onChange={(event) => {
+              const next = Number(event.target.value)
+              setMotionPreset(next)
+              queuePreset('setmotionpreset', next)
+            }}
           >
             <option value={1}>Direct</option>
             <option value={2}>Normal</option>
@@ -129,15 +153,13 @@ export default function ColorMotionPage() {
             <option value={999}>Custom</option>
           </select>
         </div>
-        <button type="button" onClick={applyPresets}>
-          Apply Presets
-        </button>
       </section>
       <section className="card">
         <header className="card-header">
           <h2>Color Calibration</h2>
         </header>
-        <div className="form-grid">
+        <div className="color-grid">
+          <div className="form-grid">
           <label htmlFor="colorRed">Red</label>
           <input
             id="colorRed"
@@ -145,9 +167,16 @@ export default function ColorMotionPage() {
             min="1"
             max="255"
             value={colorRed}
-            onChange={(event) => setColorRed(Number(event.target.value))}
+            onChange={(event) => {
+              const next = Number(event.target.value)
+              setColorRed(next)
+              queueParam('setcolorred', next)
+            }}
+            className="range-red"
           />
           <div className="muted">{colorRed}</div>
+          </div>
+          <div className="form-grid">
           <label htmlFor="colorGreen">Green</label>
           <input
             id="colorGreen"
@@ -155,9 +184,16 @@ export default function ColorMotionPage() {
             min="1"
             max="255"
             value={colorGreen}
-            onChange={(event) => setColorGreen(Number(event.target.value))}
+            onChange={(event) => {
+              const next = Number(event.target.value)
+              setColorGreen(next)
+              queueParam('setcolorgreen', next)
+            }}
+            className="range-green"
           />
           <div className="muted">{colorGreen}</div>
+          </div>
+          <div className="form-grid">
           <label htmlFor="colorBlue">Blue</label>
           <input
             id="colorBlue"
@@ -165,28 +201,23 @@ export default function ColorMotionPage() {
             min="1"
             max="255"
             value={colorBlue}
-            onChange={(event) => setColorBlue(Number(event.target.value))}
+            onChange={(event) => {
+              const next = Number(event.target.value)
+              setColorBlue(next)
+              queueParam('setcolorblue', next)
+            }}
+            className="range-blue"
           />
           <div className="muted">{colorBlue}</div>
+          </div>
         </div>
-        <button
-          type="button"
-          onClick={() =>
-            applyParams([
-              ['setcolorred', colorRed],
-              ['setcolorgreen', colorGreen],
-              ['setcolorblue', colorBlue],
-            ])
-          }
-        >
-          Apply Calibration
-        </button>
       </section>
       <section className="card">
         <header className="card-header">
           <h2>Color Boost</h2>
         </header>
-        <div className="form-grid">
+        <div className="color-grid">
+          <div className="form-grid">
           <label htmlFor="colorBoost">Color Boost</label>
           <input
             id="colorBoost"
@@ -195,9 +226,16 @@ export default function ColorMotionPage() {
             max="100"
             step="5"
             value={colorBoost}
-            onChange={(event) => setColorBoost(Number(event.target.value))}
+            onChange={(event) => {
+              const next = Number(event.target.value)
+              setColorBoost(next)
+              queueParam('setcolorboost', next)
+            }}
+            className="range-yellow"
           />
           <div className="muted">{colorBoost}</div>
+          </div>
+          <div className="form-grid">
           <label htmlFor="colorBoostBalance">Boost Balance</label>
           <input
             id="colorBoostBalance"
@@ -206,9 +244,16 @@ export default function ColorMotionPage() {
             max="100"
             step="5"
             value={colorBoostBalance}
-            onChange={(event) => setColorBoostBalance(Number(event.target.value))}
+            onChange={(event) => {
+              const next = Number(event.target.value)
+              setColorBoostBalance(next)
+              queueParam('setcolorboostbalance', next)
+            }}
+            className="range-cyan"
           />
           <div className="muted">{colorBoostBalance}</div>
+          </div>
+          <div className="form-grid">
           <label htmlFor="colorBoostMin">Boost Smoothing</label>
           <input
             id="colorBoostMin"
@@ -217,9 +262,16 @@ export default function ColorMotionPage() {
             max="100"
             step="5"
             value={colorBoostMin}
-            onChange={(event) => setColorBoostMin(Number(event.target.value))}
+            onChange={(event) => {
+              const next = Number(event.target.value)
+              setColorBoostMin(next)
+              queueParam('setcolorboostmin', next)
+            }}
+            className="range-gray"
           />
           <div className="muted">{colorBoostMin}</div>
+          </div>
+          <div className="form-grid">
           <label htmlFor="colorBoostThreshold">Boost Threshold</label>
           <input
             id="colorBoostThreshold"
@@ -228,9 +280,16 @@ export default function ColorMotionPage() {
             max="255"
             step="5"
             value={colorBoostThreshold}
-            onChange={(event) => setColorBoostThreshold(Number(event.target.value))}
+            onChange={(event) => {
+              const next = Number(event.target.value)
+              setColorBoostThreshold(next)
+              queueParam('setcolorboostthreshold', next)
+            }}
+            className="range-purple"
           />
           <div className="muted">{colorBoostThreshold}</div>
+          </div>
+          <div className="form-grid">
           <label htmlFor="colorBoostRed">Red Boost</label>
           <input
             id="colorBoostRed"
@@ -239,9 +298,16 @@ export default function ColorMotionPage() {
             max="100"
             step="5"
             value={colorBoostRed}
-            onChange={(event) => setColorBoostRed(Number(event.target.value))}
+            onChange={(event) => {
+              const next = Number(event.target.value)
+              setColorBoostRed(next)
+              queueParam('setcolorboostred', next)
+            }}
+            className="range-red"
           />
           <div className="muted">{colorBoostRed}</div>
+          </div>
+          <div className="form-grid">
           <label htmlFor="colorBoostGreen">Green Boost</label>
           <input
             id="colorBoostGreen"
@@ -250,9 +316,16 @@ export default function ColorMotionPage() {
             max="100"
             step="5"
             value={colorBoostGreen}
-            onChange={(event) => setColorBoostGreen(Number(event.target.value))}
+            onChange={(event) => {
+              const next = Number(event.target.value)
+              setColorBoostGreen(next)
+              queueParam('setcolorboostgreen', next)
+            }}
+            className="range-green"
           />
           <div className="muted">{colorBoostGreen}</div>
+          </div>
+          <div className="form-grid">
           <label htmlFor="colorBoostBlue">Blue Boost</label>
           <input
             id="colorBoostBlue"
@@ -261,32 +334,23 @@ export default function ColorMotionPage() {
             max="100"
             step="5"
             value={colorBoostBlue}
-            onChange={(event) => setColorBoostBlue(Number(event.target.value))}
+            onChange={(event) => {
+              const next = Number(event.target.value)
+              setColorBoostBlue(next)
+              queueParam('setcolorboostblue', next)
+            }}
+            className="range-blue"
           />
           <div className="muted">{colorBoostBlue}</div>
+          </div>
         </div>
-        <button
-          type="button"
-          onClick={() =>
-            applyParams([
-              ['setcolorboost', colorBoost],
-              ['setcolorboostbalance', colorBoostBalance],
-              ['setcolorboostmin', colorBoostMin],
-              ['setcolorboostthreshold', colorBoostThreshold],
-              ['setcolorboostred', colorBoostRed],
-              ['setcolorboostgreen', colorBoostGreen],
-              ['setcolorboostblue', colorBoostBlue],
-            ])
-          }
-        >
-          Apply Color Boost
-        </button>
       </section>
       <section className="card">
         <header className="card-header">
           <h2>Brightness</h2>
         </header>
-        <div className="form-grid">
+        <div className="color-grid">
+          <div className="form-grid">
           <label htmlFor="brightness">Brightness</label>
           <input
             id="brightness"
@@ -295,9 +359,16 @@ export default function ColorMotionPage() {
             max="255"
             step="5"
             value={brightness}
-            onChange={(event) => setBrightness(Number(event.target.value))}
+            onChange={(event) => {
+              const next = Number(event.target.value)
+              setBrightness(next)
+              queueParam('setbrightness', next)
+            }}
+            className="range-yellow"
           />
           <div className="muted">{brightness}</div>
+          </div>
+          <div className="form-grid">
           <label htmlFor="colorValueGain">Value Gain</label>
           <input
             id="colorValueGain"
@@ -306,9 +377,16 @@ export default function ColorMotionPage() {
             max="500"
             step="5"
             value={colorValueGain}
-            onChange={(event) => setColorValueGain(Number(event.target.value))}
+            onChange={(event) => {
+              const next = Number(event.target.value)
+              setColorValueGain(next)
+              queueParam('setcolorvaluegain', next)
+            }}
+            className="range-cyan"
           />
           <div className="muted">{colorValueGain}</div>
+          </div>
+          <div className="form-grid">
           <label htmlFor="minimumLuminosity">Minimum Luminosity</label>
           <input
             id="minimumLuminosity"
@@ -317,28 +395,23 @@ export default function ColorMotionPage() {
             max="255"
             step="5"
             value={minimumLuminosity}
-            onChange={(event) => setMinimumLuminosity(Number(event.target.value))}
+            onChange={(event) => {
+              const next = Number(event.target.value)
+              setMinimumLuminosity(next)
+              queueParam('setminimumluminosity', next)
+            }}
+            className="range-gray"
           />
           <div className="muted">{minimumLuminosity}</div>
+          </div>
         </div>
-        <button
-          type="button"
-          onClick={() =>
-            applyParams([
-              ['setbrightness', brightness],
-              ['setcolorvaluegain', colorValueGain],
-              ['setminimumluminosity', minimumLuminosity],
-            ])
-          }
-        >
-          Apply Brightness
-        </button>
       </section>
       <section className="card">
         <header className="card-header">
           <h2>Motion</h2>
         </header>
-        <div className="form-grid">
+        <div className="color-grid">
+          <div className="form-grid">
           <label htmlFor="frameSmoothing">Frame Smoothing</label>
           <input
             id="frameSmoothing"
@@ -347,9 +420,16 @@ export default function ColorMotionPage() {
             max="30"
             step="1"
             value={frameSmoothing}
-            onChange={(event) => setFrameSmoothing(Number(event.target.value))}
+            onChange={(event) => {
+              const next = Number(event.target.value)
+              setFrameSmoothing(next)
+              queueParam('setframesmoothing', next)
+            }}
+            className="range-gray"
           />
           <div className="muted">{frameSmoothing}</div>
+          </div>
+          <div className="form-grid">
           <label htmlFor="frameLength">Frame Length (ms)</label>
           <input
             id="frameLength"
@@ -358,9 +438,16 @@ export default function ColorMotionPage() {
             max="100"
             step="5"
             value={frameLength}
-            onChange={(event) => setFrameLength(Number(event.target.value))}
+            onChange={(event) => {
+              const next = Number(event.target.value)
+              setFrameLength(next)
+              queueParam('setframelength', next)
+            }}
+            className="range-cyan"
           />
           <div className="muted">{frameLength}</div>
+          </div>
+          <div className="form-grid">
           <label htmlFor="frameDelay">Frame Delay (ms)</label>
           <input
             id="frameDelay"
@@ -369,25 +456,41 @@ export default function ColorMotionPage() {
             max="1000"
             step="5"
             value={frameDelay}
-            onChange={(event) => setFrameDelay(Number(event.target.value))}
+            onChange={(event) => {
+              const next = Number(event.target.value)
+              setFrameDelay(next)
+              queueParam('setframedelay', next)
+            }}
+            className="range-purple"
           />
           <div className="muted">{frameDelay}</div>
+          </div>
         </div>
-        <button
-          type="button"
-          onClick={() =>
-            applyParams([
-              ['setframesmoothing', frameSmoothing],
-              ['setframelength', frameLength],
-              ['setframedelay', frameDelay],
-            ])
-          }
-        >
-          Apply Motion Settings
-        </button>
+        <div className="button-row">
+          <button
+            type="button"
+            className="button secondary"
+            disabled={resetting}
+            onClick={async () => {
+              setResetting(true)
+              setMessage('')
+              try {
+                await applyDefaults(COLOR_MOTION_DEFAULTS)
+                await refresh()
+                setMessage('Color & motion reset to defaults')
+              } catch (err) {
+                setMessage(err.message || 'Failed to reset')
+              } finally {
+                setResetting(false)
+              }
+            }}
+          >
+            {resetting ? 'Resetting…' : 'Reset to default'}
+          </button>
+        </div>
       </section>
       {message && <div className="muted">{message}</div>}
-      <ParamSetter />
+      {advanced && <ParamSetter />}
     </div>
   )
 }

@@ -67,6 +67,14 @@ export const api = {
   setPreset: (param, value) =>
     requestText(`/setpreset?param=${encodeURIComponent(param)}&value=${encodeURIComponent(value)}`),
   refreshHueDevices: () => requestText('/refresh_hue_devices'),
+  getHueLightSettings: (id) =>
+    requestText(`/controllersettings_hue.js?id=${encodeURIComponent(id)}`),
+  setHueLightParam: ({ param, id, value, zone }) =>
+    requestText(
+      `/setparam?param=${encodeURIComponent(param)}&id=${encodeURIComponent(id)}&value=${encodeURIComponent(value)}${
+        zone !== undefined ? `&zone=${encodeURIComponent(zone)}` : ''
+      }`,
+    ),
   refreshDreamscreenDevices: () => requestText('/refresh_dreamscreen_devices'),
   addDreamscreenToNetwork: (ssid) =>
     requestText(`/dreamscreenaddtonetwork?value=${encodeURIComponent(ssid)}`),

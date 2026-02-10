@@ -4,10 +4,13 @@ import ParamSetter from '../components/ParamSetter.jsx'
 import useDeviceParams from '../hooks/useDeviceParams.js'
 import { api } from '../api/client.js'
 import { readBool, readNumber } from '../utils/paramUtils.js'
+import { applyDefaults } from '../utils/applyDefaults.js'
+import { DREAMSCREEN_DEFAULTS } from '../utils/paramDefaults.js'
 
 export default function DreamscreenPage() {
-  const { params } = useDeviceParams()
+  const { params, refresh } = useDeviceParams()
   const [message, setMessage] = useState('')
+  const [resetting, setResetting] = useState(false)
   const [supportEnabled, setSupportEnabled] = useState(false)
   const [emulationEnabled, setEmulationEnabled] = useState(false)
   const [groupId, setGroupId] = useState(0)
@@ -116,6 +119,26 @@ export default function DreamscreenPage() {
           </button>
           <button type="button" onClick={refreshDreamscreen}>
             Refresh DreamScreen Devices
+          </button>
+          <button
+            type="button"
+            className="button secondary"
+            disabled={resetting}
+            onClick={async () => {
+              setResetting(true)
+              setMessage('')
+              try {
+                await applyDefaults(DREAMSCREEN_DEFAULTS)
+                await refresh()
+                setMessage('DreamScreen settings reset to defaults')
+              } catch (err) {
+                setMessage(err.message || 'Failed to reset DreamScreen settings')
+              } finally {
+                setResetting(false)
+              }
+            }}
+          >
+            {resetting ? 'Resetting…' : 'Reset to default'}
           </button>
         </div>
       </section>

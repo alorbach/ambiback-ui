@@ -5,12 +5,12 @@ import useDeviceParams from '../hooks/useDeviceParams.js'
 import { readNumber } from '../utils/paramUtils.js'
 
 const modes = [
-  { value: 0, label: 'Off' },
-  { value: 1, label: 'Video' },
-  { value: 2, label: 'Ambient' },
-  { value: 3, label: 'Camera' },
-  { value: 4, label: 'Relay' },
-  { value: 5, label: 'Demo' },
+  { value: 0, label: 'Off', sub: 'Fade out & switch off' },
+  { value: 1, label: 'Video', sub: 'Network / sync' },
+  { value: 2, label: 'Ambient', sub: 'Static or scenes' },
+  { value: 3, label: 'Camera', sub: 'Screen capture' },
+  { value: 4, label: 'Relay', sub: 'Forward to device' },
+  { value: 5, label: 'Demo', sub: 'Test pattern' },
 ]
 
 export default function ModeControls() {
@@ -42,25 +42,25 @@ export default function ModeControls() {
   }
 
   return (
-    <section className="card">
+    <section className="card card-full">
       <header className="card-header">
         <h2>LED Mode</h2>
       </header>
-      <div className="button-grid">
+      <div className="mode-tile-grid">
         {availableModes.map((mode) => (
           <button
             key={mode.value}
             type="button"
             onClick={() => setMode(mode.value)}
             disabled={loading}
-            className={currentMode === mode.value ? 'active' : ''}
+            className={`mode-tile ${currentMode === mode.value ? 'active' : ''}`}
           >
             {mode.label}
+            {mode.sub && <span className="mode-tile-label">{mode.sub}</span>}
           </button>
         ))}
       </div>
-      {currentMode != null && <div className="muted">Current mode: {currentMode}</div>}
-      {message && <div className="muted">{message}</div>}
+      {message && <div className="muted" style={{ marginTop: 8 }}>{message}</div>}
     </section>
   )
 }

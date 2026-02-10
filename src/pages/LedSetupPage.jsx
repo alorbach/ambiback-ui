@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react'
 import { api } from '../api/client.js'
 import useDeviceParams from '../hooks/useDeviceParams.js'
 import { readBool, readNumber } from '../utils/paramUtils.js'
+import { applyDefaults } from '../utils/applyDefaults.js'
+import { LED_SETUP_DEFAULTS } from '../utils/paramDefaults.js'
 
 export default function LedSetupPage() {
-  const { params } = useDeviceParams()
+  const { params, refresh } = useDeviceParams()
   const [vertical, setVertical] = useState(20)
   const [horizontal, setHorizontal] = useState(30)
   const [direction, setDirection] = useState(1)
@@ -21,6 +23,7 @@ export default function LedSetupPage() {
     bottom: 100,
   })
   const [message, setMessage] = useState('')
+  const [resetting, setResetting] = useState(false)
 
   const directionLabel = (value) => {
     switch (value) {
@@ -91,21 +94,11 @@ export default function LedSetupPage() {
     })
   }, [params])
 
-  const apply = async () => {
+  const updateParam = async (param, value, successText = 'LED setup updated') => {
     setMessage('')
     try {
-      await api.setParam('setvertical', vertical)
-      await api.setParam('sethorizontal', horizontal)
-      await api.setParam('setdirection', direction)
-      await api.setParam('setsidetop', sides.top ? 1 : 0)
-      await api.setParam('setsideleft', sides.left ? 1 : 0)
-      await api.setParam('setsideright', sides.right ? 1 : 0)
-      await api.setParam('setsidebottom', sides.bottom ? 1 : 0)
-      await api.setParam('settopbrightness', sideBrightness.top)
-      await api.setParam('setleftbrightness', sideBrightness.left)
-      await api.setParam('setrightbrightness', sideBrightness.right)
-      await api.setParam('setbottombrightness', sideBrightness.bottom)
-      setMessage('LED setup updated')
+      await api.setParam(param, value)
+      setMessage(successText)
     } catch (err) {
       setMessage(err.message || 'Failed to update LED setup')
     }
@@ -123,30 +116,44 @@ export default function LedSetupPage() {
             <label htmlFor="vertical">Vertical LEDs</label>
             <input
               id="vertical"
-              type="number"
+              type="range"
               min="8"
               max="60"
               value={vertical}
-              onChange={(event) => setVertical(Number(event.target.value))}
+              onChange={(event) => {
+                const next = Number(event.target.value)
+                setVertical(next)
+                updateParam('setvertical', next)
+              }}
             />
+            <div className="muted">{vertical}</div>
           </div>
           <div className="layout-field">
             <label htmlFor="horizontal">Horizontal LEDs</label>
             <input
               id="horizontal"
-              type="number"
+              type="range"
               min="8"
               max="120"
               value={horizontal}
-              onChange={(event) => setHorizontal(Number(event.target.value))}
+              onChange={(event) => {
+                const next = Number(event.target.value)
+                setHorizontal(next)
+                updateParam('sethorizontal', next)
+              }}
             />
+            <div className="muted">{horizontal}</div>
           </div>
           <div className="layout-field">
             <label htmlFor="direction">Direction</label>
             <select
               id="direction"
               value={direction}
-              onChange={(event) => setDirection(Number(event.target.value))}
+              onChange={(event) => {
+                const next = Number(event.target.value)
+                setDirection(next)
+                updateParam('setdirection', next)
+              }}
             >
               <option value={1}>Bottom Right (CCW)</option>
               <option value={2}>Top Right (CCW)</option>
@@ -159,40 +166,7 @@ export default function LedSetupPage() {
             </select>
           </div>
         </div>
-        <div className="layout-sides">
-          <label className="checkbox">
-            <input
-              type="checkbox"
-              checked={sides.top}
-              onChange={(event) => setSides({ ...sides, top: event.target.checked })}
-            />
-            Top side
-          </label>
-          <label className="checkbox">
-            <input
-              type="checkbox"
-              checked={sides.left}
-              onChange={(event) => setSides({ ...sides, left: event.target.checked })}
-            />
-            Left side
-          </label>
-          <label className="checkbox">
-            <input
-              type="checkbox"
-              checked={sides.right}
-              onChange={(event) => setSides({ ...sides, right: event.target.checked })}
-            />
-            Right side
-          </label>
-          <label className="checkbox">
-            <input
-              type="checkbox"
-              checked={sides.bottom}
-              onChange={(event) => setSides({ ...sides, bottom: event.target.checked })}
-            />
-            Bottom side
-          </label>
-        </div>
+        <div className="layout-hint muted">Tap the TV edges to toggle sides.</div>
         <div className="tv-preview">
           <div className="tv-frame">
             <div className="tv-back-label">Backside</div>
@@ -200,42 +174,66 @@ export default function LedSetupPage() {
             <svg className="tv-arrow" viewBox="0 0 400 240" aria-hidden="true">
               <path d={hint.flow === 'CW' ? arrowPathCW : arrowPathCCW} />
             </svg>
-            <div
-              className="tv-side tv-side-top"
+            <button
+              type="button"
+              className={`tv-side tv-side-top ${sides.top ? 'tv-side-enabled' : 'tv-side-disabled'}`}
               style={{
-                opacity: sides.top ? 1 : 0.2,
                 transform: `scaleX(${sideBrightness.top / 100})`,
               }}
+              onClick={() => {
+                const next = !sides.top
+                setSides({ ...sides, top: next })
+                updateParam('setsidetop', next ? 1 : 0)
+              }}
+              aria-pressed={sides.top}
             >
               Top
-            </div>
-            <div
-              className="tv-side tv-side-right"
+            </button>
+            <button
+              type="button"
+              className={`tv-side tv-side-right ${sides.right ? 'tv-side-enabled' : 'tv-side-disabled'}`}
               style={{
-                opacity: sides.right ? 1 : 0.2,
                 transform: `scaleY(${sideBrightness.right / 100})`,
               }}
+              onClick={() => {
+                const next = !sides.right
+                setSides({ ...sides, right: next })
+                updateParam('setsideright', next ? 1 : 0)
+              }}
+              aria-pressed={sides.right}
             >
               Right
-            </div>
-            <div
-              className="tv-side tv-side-bottom"
+            </button>
+            <button
+              type="button"
+              className={`tv-side tv-side-bottom ${sides.bottom ? 'tv-side-enabled' : 'tv-side-disabled'}`}
               style={{
-                opacity: sides.bottom ? 1 : 0.2,
                 transform: `scaleX(${sideBrightness.bottom / 100})`,
               }}
+              onClick={() => {
+                const next = !sides.bottom
+                setSides({ ...sides, bottom: next })
+                updateParam('setsidebottom', next ? 1 : 0)
+              }}
+              aria-pressed={sides.bottom}
             >
               Bottom
-            </div>
-            <div
-              className="tv-side tv-side-left"
+            </button>
+            <button
+              type="button"
+              className={`tv-side tv-side-left ${sides.left ? 'tv-side-enabled' : 'tv-side-disabled'}`}
               style={{
-                opacity: sides.left ? 1 : 0.2,
                 transform: `scaleY(${sideBrightness.left / 100})`,
               }}
+              onClick={() => {
+                const next = !sides.left
+                setSides({ ...sides, left: next })
+                updateParam('setsideleft', next ? 1 : 0)
+              }}
+              aria-pressed={sides.left}
             >
               Left
-            </div>
+            </button>
             <div
               className={`tv-arrowhead tv-arrowhead-${hint.start.replace(' ', '-').toLowerCase()} tv-arrowhead-${hint.flow.toLowerCase()}`}
             />
@@ -253,9 +251,11 @@ export default function LedSetupPage() {
                 min="1"
                 max="100"
                 value={sideBrightness.top}
-                onChange={(event) =>
-                  setSideBrightness({ ...sideBrightness, top: Number(event.target.value) })
-                }
+                onChange={(event) => {
+                  const next = Number(event.target.value)
+                  setSideBrightness({ ...sideBrightness, top: next })
+                  updateParam('settopbrightness', next)
+                }}
               />
               <span className="muted">{sideBrightness.top}</span>
             </div>
@@ -269,9 +269,11 @@ export default function LedSetupPage() {
                 min="1"
                 max="100"
                 value={sideBrightness.right}
-                onChange={(event) =>
-                  setSideBrightness({ ...sideBrightness, right: Number(event.target.value) })
-                }
+                onChange={(event) => {
+                  const next = Number(event.target.value)
+                  setSideBrightness({ ...sideBrightness, right: next })
+                  updateParam('setrightbrightness', next)
+                }}
               />
               <span className="muted">{sideBrightness.right}</span>
             </div>
@@ -285,9 +287,11 @@ export default function LedSetupPage() {
                 min="1"
                 max="100"
                 value={sideBrightness.left}
-                onChange={(event) =>
-                  setSideBrightness({ ...sideBrightness, left: Number(event.target.value) })
-                }
+                onChange={(event) => {
+                  const next = Number(event.target.value)
+                  setSideBrightness({ ...sideBrightness, left: next })
+                  updateParam('setleftbrightness', next)
+                }}
               />
               <span className="muted">{sideBrightness.left}</span>
             </div>
@@ -301,17 +305,38 @@ export default function LedSetupPage() {
                 min="1"
                 max="100"
                 value={sideBrightness.bottom}
-                onChange={(event) =>
-                  setSideBrightness({ ...sideBrightness, bottom: Number(event.target.value) })
-                }
+                onChange={(event) => {
+                  const next = Number(event.target.value)
+                  setSideBrightness({ ...sideBrightness, bottom: next })
+                  updateParam('setbottombrightness', next)
+                }}
               />
               <span className="muted">{sideBrightness.bottom}</span>
             </div>
           </div>
         </div>
-        <button type="button" onClick={apply}>
-          Apply Setup
-        </button>
+        <div className="button-row">
+          <button
+            type="button"
+            className="button secondary"
+            disabled={resetting}
+            onClick={async () => {
+              setResetting(true)
+              setMessage('')
+              try {
+                await applyDefaults(LED_SETUP_DEFAULTS)
+                await refresh()
+                setMessage('LED setup reset to defaults')
+              } catch (err) {
+                setMessage(err.message || 'Failed to reset LED setup')
+              } finally {
+                setResetting(false)
+              }
+            }}
+          >
+            {resetting ? 'Resetting…' : 'Reset to default'}
+          </button>
+        </div>
         {message && <div className="muted">{message}</div>}
       </section>
     </div>
