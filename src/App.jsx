@@ -8,6 +8,7 @@ import HuePage from './pages/HuePage.jsx'
 import DreamscreenPage from './pages/DreamscreenPage.jsx'
 import AmbientPage from './pages/AmbientPage.jsx'
 import { CapabilitiesProvider, useCapabilitiesContext } from './contexts/CapabilitiesContext.jsx'
+import { DeviceParamsProvider } from './contexts/DeviceParamsContext.jsx'
 import { UiSettingsProvider } from './contexts/UiSettingsContext.jsx'
 import './App.css'
 
@@ -43,10 +44,12 @@ function App() {
 
 export default function AppWithProviders() {
   return (
-    <CapabilitiesProvider>
-      <UiSettingsProvider>
-        <App />
-      </UiSettingsProvider>
-    </CapabilitiesProvider>
+    <UiSettingsProvider>
+      <DeviceParamsProvider>
+        <CapabilitiesProvider>
+          <App />
+        </CapabilitiesProvider>
+      </DeviceParamsProvider>
+    </UiSettingsProvider>
   )
 }

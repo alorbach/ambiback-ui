@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import ModeControls from '../components/ModeControls.jsx'
 import ColorControls from '../components/ColorControls.jsx'
 import ParamSetter from '../components/ParamSetter.jsx'
 import useDeviceParams from '../hooks/useDeviceParams.js'
@@ -92,7 +91,6 @@ export default function ColorMotionPage() {
   return (
     <div className="page">
       <h1>Color & Motion</h1>
-      <ModeControls />
       <div className="card-grid">
         <ColorControls />
       </div>

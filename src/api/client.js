@@ -1,4 +1,6 @@
 const STORAGE_KEY = 'ambiback.deviceBaseUrl'
+const RECENT_DEVICES_KEY = 'ambiback.recentDevices'
+const RECENT_MAX = 10
 
 export function getStoredBaseUrl() {
   return localStorage.getItem(STORAGE_KEY) || ''
@@ -6,6 +8,31 @@ export function getStoredBaseUrl() {
 
 export function setStoredBaseUrl(value) {
   localStorage.setItem(STORAGE_KEY, value)
+}
+
+export function getRecentDevices() {
+  try {
+    const raw = localStorage.getItem(RECENT_DEVICES_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
+export function addRecentDevice(url) {
+  if (!url) return
+  const normalized = normalizeBaseUrl(url)
+  if (!normalized) return
+  const recent = getRecentDevices().filter((u) => u !== normalized)
+  recent.unshift(normalized)
+  const trimmed = recent.slice(0, RECENT_MAX)
+  try {
+    localStorage.setItem(RECENT_DEVICES_KEY, JSON.stringify(trimmed))
+  } catch {
+    // ignore
+  }
 }
 
 export function resolveBaseUrl() {
@@ -85,4 +112,21 @@ export const api = {
   reboot: () => requestText('/reboot?forreal=1'),
   startWps: () => requestText('/startwps?forreal=1'),
   updateUrl: () => buildUrl('/update'),
+
+  /** Phase 3: GET /discover from known device - returns UDP-discovered devices */
+  async discoverViaEndpoint() {
+    const base = resolveBaseUrl()
+    if (!base) throw new Error('No device URL set')
+    const url = `${base.replace(/\/+$/, '')}/discover`
+    const res = await fetch(url, { mode: 'cors' })
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const data = await res.json()
+    return Array.isArray(data) ? data : []
+  },
+
+  /** Phase 2: Subnet scan - fetch status from each IP */
+  discoverDevices: async (subnet, signal) => {
+    const { scanSubnet } = await import('../utils/discovery.js')
+    return scanSubnet(subnet, signal)
+  },
 }

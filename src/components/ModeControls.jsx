@@ -22,11 +22,12 @@ export default function ModeControls() {
 
   const availableModes = useMemo(() => {
     return modes.filter((mode) => {
+      if (mode.value === 1 && caps.camera) return false // Video not on Cam modules
       if (mode.value === 3 && !caps.camera) return false
-      if (mode.value === 4 && !caps.relay) return false
+      if (mode.value === 4) return false // Relay hidden
       return true
     })
-  }, [caps.camera, caps.relay])
+  }, [caps.camera])
 
   const setMode = async (mode) => {
     setLoading(true)

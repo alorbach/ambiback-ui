@@ -112,18 +112,25 @@ export default function ColorControls({ fullWidth = false }) {
     }, 300)
   }
 
-  const onWheelClick = (e) => {
+  const getClientPos = (e) => {
+    if (e.touches && e.touches.length > 0) {
+      return { x: e.touches[0].clientX, y: e.touches[0].clientY }
+    }
+    return { x: e.clientX, y: e.clientY }
+  }
+
+  const onWheelPointer = (e) => {
     const el = wheelRef.current
     if (!el) return
+    const { x, y } = getClientPos(e)
     const rect = el.getBoundingClientRect()
     const cx = rect.left + rect.width / 2
     const cy = rect.top + rect.height / 2
-    const x = e.clientX - cx
-    const y = e.clientY - cy
-    const angle = Math.atan2(y, x)
+    const dx = x - cx
+    const dy = y - cy
+    const angle = Math.atan2(dy, dx)
     let deg = (angle * 180) / Math.PI + 90
     if (deg < 0) deg += 360
-    // At L=100% every hue is white; use 50% so the clicked hue is visible and sent
     const effectiveLightness = lightness >= 98 ? 50 : lightness
     const hex = hslToHex(deg, 100, effectiveLightness)
     setHue(deg)
@@ -133,17 +140,28 @@ export default function ColorControls({ fullWidth = false }) {
     sendColorAndSwitchToSolid(hex.replace('#', ''))
   }
 
-  const onBarClick = (e) => {
+  const onBarPointer = (e) => {
     const el = barRef.current
     if (!el) return
+    const { y } = getClientPos(e)
     const rect = el.getBoundingClientRect()
-    const y = e.clientY - rect.top
-    const pct = Math.max(0, Math.min(100, (y / rect.height) * 100))
+    const py = y - rect.top
+    const pct = Math.max(0, Math.min(100, (py / rect.height) * 100))
     const hex = hslToHex(hue, 100, pct)
     setLightness(pct)
     setColor(hex)
     if (colorTimer.current) clearTimeout(colorTimer.current)
     sendColorAndSwitchToSolid(hex.replace('#', ''))
+  }
+
+  const handleTouchStart = (e, handler) => {
+    e.preventDefault()
+    handler(e)
+  }
+
+  const handleTouchMove = (e, handler) => {
+    e.preventDefault()
+    handler(e)
   }
 
   return (
@@ -161,14 +179,16 @@ export default function ColorControls({ fullWidth = false }) {
               height: WHEEL_SIZE,
               background: `conic-gradient(from 0deg, red, yellow, lime, cyan, blue, magenta, red)`,
             }}
-            onClick={onWheelClick}
+            onClick={onWheelPointer}
+            onTouchStart={(e) => handleTouchStart(e, onWheelPointer)}
+            onTouchMove={(e) => handleTouchMove(e, onWheelPointer)}
             role="button"
             tabIndex={0}
-            aria-label="Hue wheel - click to select hue"
+            aria-label="Hue wheel - click or drag to select hue"
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault()
-                onWheelClick(e)
+                onWheelPointer(e)
               }
             }}
           />
@@ -178,14 +198,16 @@ export default function ColorControls({ fullWidth = false }) {
             style={{
               background: `linear-gradient(to bottom, #000, ${hslToHex(hue, 100, 50)}, #fff)`,
             }}
-            onClick={onBarClick}
+            onClick={onBarPointer}
+            onTouchStart={(e) => handleTouchStart(e, onBarPointer)}
+            onTouchMove={(e) => handleTouchMove(e, onBarPointer)}
             role="button"
             tabIndex={0}
-            aria-label="Lightness - click to select"
+            aria-label="Lightness - click or drag to select"
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault()
-                onBarClick(e)
+                onBarPointer(e)
               }
             }}
           />

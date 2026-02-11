@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { useState } from 'react'
 import DeviceSelector from './DeviceSelector.jsx'
+import ModeControls from './ModeControls.jsx'
 import { useCapabilitiesContext } from '../contexts/CapabilitiesContext.jsx'
 import { useUiSettings } from '../contexts/UiSettingsContext.jsx'
 
@@ -16,12 +17,21 @@ const navItems = [
 
 export default function Layout({ children }) {
   const { caps, loading, error } = useCapabilitiesContext()
-  const { advanced, setAdvanced } = useUiSettings()
+  const { advanced, setAdvanced, statusRefreshInterval, setStatusRefreshInterval, refreshIntervalOptions } =
+    useUiSettings()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const visibleItems = navItems.filter((item) => (loading ? item.cap !== 'camera' && item.cap !== 'hue' && item.cap !== 'dreamscreen' : caps[item.cap]))
 
   return (
     <div className="app-shell">
+      <div
+        className={`sidebar-backdrop ${mobileNavOpen ? 'visible' : ''}`}
+        onClick={() => setMobileNavOpen(false)}
+        onKeyDown={(e) => e.key === 'Escape' && setMobileNavOpen(false)}
+        role="button"
+        tabIndex={-1}
+        aria-label="Close menu"
+      />
       <header className="mobile-header">
         <div className="brand">
           <div className="brand-title">AmbiBack</div>
@@ -56,7 +66,7 @@ export default function Layout({ children }) {
           ))}
         </nav>
         {loading && (
-          <div className="params-loading-hint muted">Loading settings…</div>
+          <div className="params-loading-hint muted">Connecting to device…</div>
         )}
         <div className="nav-footer">
           <div className="nav-footer-title">Advanced Mode</div>
@@ -68,15 +78,35 @@ export default function Layout({ children }) {
             />
             <span>Enable advanced controls</span>
           </label>
+          {advanced && (
+            <label className="nav-footer-refresh">
+              <span className="nav-footer-refresh-label">Status refresh (s)</span>
+              <select
+                value={statusRefreshInterval}
+                onChange={(e) => setStatusRefreshInterval(Number(e.target.value))}
+                className="nav-footer-refresh-select"
+                aria-label="Status refresh interval in seconds"
+              >
+                {refreshIntervalOptions.map((v) => (
+                  <option key={v} value={v}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
         </div>
       </aside>
       <main className="content">
         {loading && (
           <div className="params-loader-overlay" aria-busy="true" aria-live="polite">
             <div className="params-loader-spinner" />
-            <p className="params-loader-text">Loading settings…</p>
+            <p className="params-loader-text">Connecting to device…</p>
           </div>
         )}
+        <div className="mode-panel-sticky">
+          <ModeControls />
+        </div>
         {children}
       </main>
     </div>
