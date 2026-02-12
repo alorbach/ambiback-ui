@@ -1,21 +1,175 @@
 import { useEffect, useState } from 'react'
 import useDevice from '../hooks/useDevice.js'
 import useDeviceParams from '../hooks/useDeviceParams.js'
+import { useUiSettings } from '../contexts/UiSettingsContext.jsx'
 import { api } from '../api/client.js'
 import { readBool, readNumber } from '../utils/paramUtils.js'
 import { applyDefaults } from '../utils/applyDefaults.js'
 import { CAMERA_DEFAULTS } from '../utils/paramDefaults.js'
+import CameraCalibrationCard from '../components/CameraCalibrationCard.jsx'
+
+const CAM_GAINCEILING_OPTIONS = [
+  { value: 0, label: 'Gainceiling x2' },
+  { value: 1, label: 'Gainceiling x4' },
+  { value: 2, label: 'Gainceiling x8' },
+  { value: 3, label: 'Gainceiling x16' },
+  { value: 4, label: 'Gainceiling x32' },
+  { value: 5, label: 'Gainceiling x64' },
+  { value: 6, label: 'Gainceiling x128' },
+]
+
+const CAM_RESOLUTION_OPTIONS = [
+  { value: 0, label: '160×120' },
+  { value: 1, label: '128×160' },
+  { value: 2, label: '176×144' },
+  { value: 3, label: '240×176' },
+  { value: 4, label: '320×240' },
+  { value: 5, label: '400×296' },
+]
+
+const CAM_FLICKER_OPTIONS = [
+  { value: 0, label: 'Auto' },
+  { value: 1, label: '50 Hz' },
+  { value: 2, label: '60 Hz' },
+]
+
+const CAM_PERFORMANCE_OPTIONS = [
+  { value: 0, label: '50 fps' },
+  { value: 1, label: '45 fps' },
+  { value: 2, label: '40 fps' },
+  { value: 3, label: '35 fps' },
+  { value: 4, label: '30 fps' },
+  { value: 5, label: '25 fps' },
+  { value: 6, label: '20 fps' },
+]
+
+const CAM_FREQ_OPTIONS = [
+  { value: 0, label: '10 MHz' },
+  { value: 1, label: '12 MHz' },
+  { value: 2, label: '14 MHz' },
+  { value: 3, label: '16 MHz' },
+  { value: 4, label: '18 MHz' },
+  { value: 5, label: '20 MHz' },
+  { value: 6, label: '22 MHz' },
+  { value: 7, label: '24 MHz' },
+  { value: 8, label: '25 MHz' },
+  { value: 9, label: '26 MHz' },
+  { value: 10, label: '27 MHz' },
+]
+
+const CAM_FB_COUNT_OPTIONS = [
+  { value: 1, label: '1' },
+  { value: 2, label: '2' },
+  { value: 3, label: '3' },
+  { value: 4, label: '4' },
+  { value: 5, label: '5' },
+]
+
+const CAM_SPECIAL_EFFECT_OPTIONS = [
+  { value: 0, label: 'No effect' },
+  { value: 1, label: 'Negative' },
+  { value: 2, label: 'Black and white' },
+  { value: 3, label: 'Reddish' },
+  { value: 4, label: 'Greenish' },
+  { value: 5, label: 'Blue' },
+  { value: 6, label: 'Retro' },
+]
+
+const CAM_WB_MODE_OPTIONS = [
+  { value: 0, label: 'Default' },
+  { value: 1, label: 'Sunny' },
+  { value: 2, label: 'Cloudy' },
+  { value: 3, label: 'Office' },
+  { value: 4, label: 'Home' },
+]
+
+const CAM_LEVEL_OPTIONS = [
+  { value: -2, label: '-2' },
+  { value: -1, label: '-1' },
+  { value: 0, label: '0' },
+  { value: 1, label: '1' },
+  { value: 2, label: '2' },
+]
+
+const CAM_DETAIL_LEVEL_OPTIONS = [3, 5, 7, 9, 11, 13, 15].map((v) => ({ value: v, label: String(v) }))
+
+const CAM_AUTO_OFF_DELAY_OPTIONS = [
+  { value: 5, label: '5 s' },
+  { value: 10, label: '10 s' },
+  { value: 15, label: '15 s' },
+  { value: 20, label: '20 s' },
+  { value: 30, label: '30 s' },
+  { value: 60, label: '60 s' },
+  { value: 120, label: '120 s' },
+]
+
+const CAM_SMOOTH_OPTIONS = [
+  { value: 0, label: 'Disabled' },
+  { value: 1, label: 'Low' },
+  { value: 2, label: 'Medium' },
+  { value: 3, label: 'High' },
+  { value: 255, label: 'Custom' },
+]
+
+const CAM_WHITEBALANCE_PRESET_OPTIONS = [
+  { value: 1, label: 'Default Whitebalance' },
+  { value: 2, label: 'Sunny Whitebalance' },
+  { value: 3, label: 'Cloudy Whitebalance' },
+  { value: 4, label: 'Sunny Colorful Whitebalance' },
+  { value: 5, label: 'Office Whitebalance' },
+  { value: 6, label: 'Manual Whitebalance' },
+  { value: 999, label: 'Custom Settings' },
+]
+
+const CAM_EXPOSURE_PRESET_OPTIONS = [
+  { value: 7, label: 'Adaptive TV Mode 1 (Raw Gamma)' },
+  { value: 1, label: 'Adaptive TV Mode 2 (Lens Correction)' },
+  { value: 2, label: 'Adaptive TV Mode 3 (Default)' },
+  { value: 8, label: 'Adaptive TV Mode 4 (Raw Gamma & Lens)' },
+  { value: 6, label: 'TEST Auto Sensor Control' },
+  { value: 3, label: 'TEST Manual Normal' },
+  { value: 4, label: 'TEST Manual Bright' },
+  { value: 5, label: 'TEST Manual Very bright' },
+  { value: 999, label: 'Custom Settings' },
+]
+
+const CAM_INNER_PRESET_OPTIONS = [
+  { value: 1, label: 'Very minimal' },
+  { value: 2, label: 'Minimal' },
+  { value: 3, label: 'Normal' },
+  { value: 4, label: 'Large' },
+  { value: 5, label: 'Very large' },
+  { value: 999, label: 'Custom Settings' },
+]
+
+const CAM_COLOR_PRESET_OPTIONS = [
+  { value: 1, label: 'Normal' },
+  { value: 2, label: 'Colorful' },
+  { value: 3, label: 'Extra Colorful' },
+  { value: 4, label: 'Extreme Colorful' },
+  { value: 999, label: 'Custom Settings' },
+]
+
+const CAM_BRIGHTNESS_PRESET_OPTIONS = [
+  { value: 1, label: 'Low' },
+  { value: 2, label: 'Medium' },
+  { value: 3, label: 'Normal' },
+  { value: 4, label: 'High' },
+  { value: 5, label: 'Extra High' },
+  { value: 6, label: 'Extreme High' },
+  { value: 999, label: 'Custom Settings' },
+]
 
 export default function CameraPage() {
   const { baseUrl } = useDevice()
   const { params, refresh } = useDeviceParams()
-  const [stamp, setStamp] = useState(Date.now())
+  const { advanced } = useUiSettings()
   const [message, setMessage] = useState('')
   const [resetting, setResetting] = useState(false)
   const [camMode, setCamMode] = useState(0)
   const [camPerformance, setCamPerformance] = useState(0)
   const [camResolution, setCamResolution] = useState(0)
-  const [camFreq, setCamFreq] = useState(20)
+  const [camFreq, setCamFreq] = useState(5)
   const [camFbCount, setCamFbCount] = useState(2)
   const [camFlicker, setCamFlicker] = useState(0)
   const [camDetailLevel, setCamDetailLevel] = useState(0)
@@ -66,17 +220,33 @@ export default function CameraPage() {
   const [camWhiteMinAmount, setCamWhiteMinAmount] = useState(0)
   const [camAdaptiveChangePercent, setCamAdaptiveChangePercent] = useState(0)
   const [camAdaptiveChangeDelay, setCamAdaptiveChangeDelay] = useState(0)
+  const [camPreset, setCamPreset] = useState(3)
+  const [camExposurePreset, setCamExposurePreset] = useState(2)
+  const [camInnerPreset, setCamInnerPreset] = useState(3)
+  const [colorPreset, setColorPreset] = useState(1)
+  const [brightnessPreset, setBrightnessPreset] = useState(3)
+  const [colorBoost, setColorBoost] = useState(0)
+  const [colorBoostBalance, setColorBoostBalance] = useState(50)
+  const [colorBoostMin, setColorBoostMin] = useState(0)
+  const [colorBoostThreshold, setColorBoostThreshold] = useState(0)
+  const [colorBoostRed, setColorBoostRed] = useState(100)
+  const [colorBoostGreen, setColorBoostGreen] = useState(100)
+  const [colorBoostBlue, setColorBoostBlue] = useState(100)
+  const [colorValueGain, setColorValueGain] = useState(100)
+  const [minimumLuminosity, setMinimumLuminosity] = useState(0)
+  const [camWhitebalance, setCamWhitebalance] = useState(true)
+  const [camOverclock, setCamOverclock] = useState(false)
+  const [camColorbar, setCamColorbar] = useState(false)
+  const [camGainceilingSensor, setCamGainceilingSensor] = useState(0)
 
   const hasParam = (key) => params && Object.prototype.hasOwnProperty.call(params, key)
-  const camUrl = baseUrl ? `${baseUrl}/cam.jpg?ts=${stamp}` : '/cam.jpg'
-  const mjpegUrl = baseUrl ? `${baseUrl}/cam.mjpeg` : '/cam.mjpeg'
 
   useEffect(() => {
     if (!params) return
     setCamMode(readNumber(params, 'cammode', 0))
     setCamPerformance(readNumber(params, 'camperformance', 0))
     setCamResolution(readNumber(params, 'camresolution', 0))
-    setCamFreq(readNumber(params, 'camfreq', 20))
+    setCamFreq(readNumber(params, 'camfreq', 5))
     setCamFbCount(readNumber(params, 'camfbcount', 2))
     setCamFlicker(readNumber(params, 'camflicker', 0))
     setCamDetailLevel(readNumber(params, 'camdetaillevel', 0))
@@ -127,6 +297,24 @@ export default function CameraPage() {
     setCamWhiteMinAmount(readNumber(params, 'camwhiteminamount', 0))
     setCamAdaptiveChangePercent(readNumber(params, 'camadaptivechangepercent', 0))
     setCamAdaptiveChangeDelay(readNumber(params, 'camadaptivechangedelay', 0))
+    setCamPreset(readNumber(params, 'campreset', 3))
+    setCamExposurePreset(readNumber(params, 'camexposurepreset', 2))
+    setCamInnerPreset(readNumber(params, 'caminnerpreset', 3))
+    setColorPreset(readNumber(params, 'colorpreset', 1))
+    setBrightnessPreset(readNumber(params, 'brightnesspreset', 3))
+    setColorBoost(readNumber(params, 'colorboost', 0))
+    setColorBoostBalance(readNumber(params, 'colorboostbalance', 50))
+    setColorBoostMin(readNumber(params, 'colorboostmin', 0))
+    setColorBoostThreshold(readNumber(params, 'colorboostthreshold', 0))
+    setColorBoostRed(readNumber(params, 'colorboostred', 100))
+    setColorBoostGreen(readNumber(params, 'colorboostgreen', 100))
+    setColorBoostBlue(readNumber(params, 'colorboostblue', 100))
+    setColorValueGain(readNumber(params, 'colorvaluegain', 100))
+    setMinimumLuminosity(readNumber(params, 'minimumluminosity', 0))
+    setCamWhitebalance(readBool(params, 'camawhitebalance', true))
+    setCamOverclock(readBool(params, 'camoverclock', false))
+    setCamColorbar(readBool(params, 'camcolorbar', false))
+    setCamGainceilingSensor(readNumber(params, 'camagainceilingsensor', 0))
   }, [params])
 
   const applyParams = async (pairs) => {
@@ -141,28 +329,199 @@ export default function CameraPage() {
     }
   }
 
+  const updateParam = async (param, value, successText = 'Saved') => {
+    setMessage('')
+    try {
+      await api.setParam(param, value)
+      setMessage(successText)
+    } catch (err) {
+      setMessage(err.message || 'Failed to update')
+    }
+  }
+
   return (
     <div className="page">
       <h1>Camera</h1>
-      <section className="card">
-        <header className="card-header">
-          <h2>Snapshot</h2>
-          <button type="button" onClick={() => setStamp(Date.now())}>
-            Refresh
-          </button>
-        </header>
-        <div className="camera-frame">
-          <img src={camUrl} alt="Camera snapshot" />
+      <CameraCalibrationCard
+        baseUrl={baseUrl}
+        params={params}
+        refresh={refresh}
+        onMessage={setMessage}
+      />
+      <details className="card card-collapsible" open>
+        <summary className="card-collapsible-summary">
+          <span className="card-collapsible-chevron" aria-hidden>▶</span>
+          Camera Calibration Options
+        </summary>
+        <div className="card-collapsible-body">
+          <div className="form-grid form-grid-pairs">
+            <div className="form-field">
+              <label htmlFor="camPreset">Whitebalance Mode</label>
+              <div className="form-field-row">
+                <select
+                  id="camPreset"
+                  value={camPreset}
+                  onChange={async (e) => {
+                    const v = Number(e.target.value)
+                    setCamPreset(v)
+                    try {
+                      await api.setPreset('setcampreset', v)
+                      setMessage('Whitebalance preset updated')
+                      refresh()
+                    } catch (err) {
+                      setMessage(err.message || 'Failed to update preset')
+                    }
+                  }}
+                >
+                  {CAM_WHITEBALANCE_PRESET_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="button secondary"
+                  onClick={async () => {
+                    setMessage('')
+                    try {
+                      await applyDefaults([{ preset: true, param: 'setcampreset', value: 3 }])
+                      await refresh()
+                      setMessage('Whitebalance reset to default')
+                    } catch (err) {
+                      setMessage(err.message || 'Failed to reset')
+                    }
+                  }}
+                >
+                  Reset to default
+                </button>
+              </div>
+            </div>
+            <div className="form-field">
+              <label htmlFor="camExposurePreset">Lightexposure Calibration</label>
+              <div className="form-field-row">
+                <select
+                  id="camExposurePreset"
+                  value={camExposurePreset}
+                  onChange={async (e) => {
+                    const v = Number(e.target.value)
+                    setCamExposurePreset(v)
+                    try {
+                      await api.setPreset('setcamexposurepreset', v)
+                      setMessage('Exposure preset updated')
+                      refresh()
+                    } catch (err) {
+                      setMessage(err.message || 'Failed to update preset')
+                    }
+                  }}
+                >
+                  {CAM_EXPOSURE_PRESET_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="button secondary"
+                  onClick={async () => {
+                    setMessage('')
+                    try {
+                      await applyDefaults([{ preset: true, param: 'setcamexposurepreset', value: 2 }])
+                      await refresh()
+                      setMessage('Exposure reset to default')
+                    } catch (err) {
+                      setMessage(err.message || 'Failed to reset')
+                    }
+                  }}
+                >
+                  Reset to default
+                </button>
+              </div>
+            </div>
+          </div>
+          {camPreset === 999 && (
+            <div className="form-grid form-grid-pairs" style={{ marginTop: '1rem' }}>
+              <h3 className="form-section-title" style={{ gridColumn: '1 / -1' }}>
+                Whitebalance Control Options (Custom)
+              </h3>
+              <div className="form-field">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={camWhitebalance}
+                    onChange={async (e) => {
+                      const v = e.target.checked
+                      setCamWhitebalance(v)
+                      try {
+                        await api.setParam('setcamawhitebalance', v ? 1 : 0)
+                        setMessage('Saved')
+                        refresh()
+                      } catch (err) {
+                        setMessage(err.message || 'Failed')
+                      }
+                    }}
+                  />
+                  Enable/Disable Whitebalance
+                </label>
+              </div>
+              <div className="form-field">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={camAwbGainControl}
+                    onChange={async (e) => {
+                      const v = e.target.checked
+                      setCamAwbGainControl(v)
+                      try {
+                        await api.setParam('setcamawbgain', v ? 1 : 0)
+                        setMessage('Saved')
+                        refresh()
+                      } catch (err) {
+                        setMessage(err.message || 'Failed')
+                      }
+                    }}
+                  />
+                  Auto Whitebalance Gain Control
+                </label>
+              </div>
+              <div className="form-field">
+                <label htmlFor="camWbModeCustom">Whitebalance Mode</label>
+                <select
+                  id="camWbModeCustom"
+                  value={camWbMode}
+                  onChange={async (e) => {
+                    const v = Number(e.target.value)
+                    setCamWbMode(v)
+                    try {
+                      await api.setParam('setcamwbmode', v)
+                      setMessage('Saved')
+                      refresh()
+                    } catch (err) {
+                      setMessage(err.message || 'Failed')
+                    }
+                  }}
+                >
+                  <option value={0}>Default</option>
+                  <option value={1}>Sunny</option>
+                  <option value={2}>Cloudy</option>
+                  <option value={3}>Office</option>
+                  <option value={4}>Home</option>
+                </select>
+              </div>
+            </div>
+          )}
         </div>
-        <div className="muted">
-          <a href={mjpegUrl} target="_blank" rel="noopener">
-            Open MJPEG Stream
-          </a>
-        </div>
-      </section>
-      <section className="card">
+      </details>
+      {advanced && (
+      <details className="card card-collapsible">
+        <summary className="card-collapsible-summary">
+          <span className="card-collapsible-chevron" aria-hidden>▶</span>
+          Camera Controls
+        </summary>
+        <div className="card-collapsible-body">
         <header className="card-header">
-          <h2>Camera Controls</h2>
+          <h2>General Camera Options</h2>
           <button
             type="button"
             className="button secondary"
@@ -184,71 +543,102 @@ export default function CameraPage() {
             {resetting ? 'Resetting…' : 'Reset to default'}
           </button>
         </header>
-        <div className="form-grid">
-          <label htmlFor="camMode">Mode</label>
-          <select
-            id="camMode"
-            value={camMode}
-            onChange={(event) => setCamMode(Number(event.target.value))}
-          >
-            <option value={0}>Single Color</option>
-            <option value={1}>Light Bar</option>
-            <option value={2}>Detailed</option>
-          </select>
+        <div className="form-grid form-grid-pairs">
+          <div className="form-field">
+            <label htmlFor="camMode">Mode</label>
+            <select
+              id="camMode"
+              value={camMode}
+              onChange={async (e) => {
+                const v = Number(e.target.value)
+                setCamMode(v)
+                await updateParam('setcammode', v)
+              }}
+            >
+              <option value={0}>Single Color</option>
+              <option value={1}>Light Bar</option>
+              <option value={2}>Detailed</option>
+            </select>
+          </div>
           {hasParam('camperformance') && (
-            <>
+            <div className="form-field">
               <label htmlFor="camPerformance">Performance</label>
-              <input
+              <select
                 id="camPerformance"
-                type="number"
-                value={camPerformance}
-                onChange={(event) => setCamPerformance(Number(event.target.value))}
-              />
-            </>
+                value={Math.max(0, Math.min(6, camPerformance))}
+                onChange={(e) => setCamPerformance(Number(e.target.value))}
+              >
+                {CAM_PERFORMANCE_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           )}
           {hasParam('camresolution') && (
-            <>
+            <div className="form-field">
               <label htmlFor="camResolution">Resolution</label>
-              <input
+              <select
                 id="camResolution"
-                type="number"
                 value={camResolution}
-                onChange={(event) => setCamResolution(Number(event.target.value))}
-              />
-            </>
+                onChange={(e) => setCamResolution(Number(e.target.value))}
+              >
+                {CAM_RESOLUTION_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           )}
           {hasParam('camfreq') && (
-            <>
+            <div className="form-field">
               <label htmlFor="camFreq">Frequency (MHz)</label>
-              <input
+              <select
                 id="camFreq"
-                type="number"
-                value={camFreq}
-                onChange={(event) => setCamFreq(Number(event.target.value))}
-              />
-            </>
+                value={Math.max(0, Math.min(10, camFreq))}
+                onChange={(e) => setCamFreq(Number(e.target.value))}
+              >
+                {CAM_FREQ_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           )}
           {hasParam('camfbcount') && (
-            <>
+            <div className="form-field">
               <label htmlFor="camFbCount">Frame Buffers</label>
-              <input
+              <select
                 id="camFbCount"
-                type="number"
-                value={camFbCount}
-                onChange={(event) => setCamFbCount(Number(event.target.value))}
-              />
-            </>
+                value={Math.max(1, Math.min(5, camFbCount))}
+                onChange={(e) => setCamFbCount(Number(e.target.value))}
+              >
+                {CAM_FB_COUNT_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           )}
           {hasParam('camflicker') && (
-            <>
+            <div className="form-field">
               <label htmlFor="camFlicker">Flicker Control</label>
-              <input
+              <select
                 id="camFlicker"
-                type="number"
                 value={camFlicker}
-                onChange={(event) => setCamFlicker(Number(event.target.value))}
-              />
-            </>
+                onChange={(e) => setCamFlicker(Number(e.target.value))}
+              >
+                {CAM_FLICKER_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           )}
         </div>
         <button
@@ -265,64 +655,135 @@ export default function CameraPage() {
         >
           Apply Camera Setup
         </button>
-      </section>
-      <section className="card">
-        <header className="card-header">
-          <h2>Camera Zones & Smoothing</h2>
-        </header>
-        <div className="form-grid">
-          <label htmlFor="camDetailLevel">Detail Level</label>
-          <input
-            id="camDetailLevel"
-            type="number"
-            value={camDetailLevel}
-            onChange={(event) => setCamDetailLevel(Number(event.target.value))}
-          />
-          <label htmlFor="camInnerHori">Inner Horizontal</label>
-          <input
-            id="camInnerHori"
-            type="number"
-            step="0.01"
-            value={camInnerHori}
-            onChange={(event) => setCamInnerHori(Number(event.target.value))}
-          />
-          <label htmlFor="camInnerVert">Inner Vertical</label>
-          <input
-            id="camInnerVert"
-            type="number"
-            step="0.01"
-            value={camInnerVert}
-            onChange={(event) => setCamInnerVert(Number(event.target.value))}
-          />
-          <label htmlFor="camSmoothMode">Smooth Mode</label>
-          <input
-            id="camSmoothMode"
-            type="number"
-            value={camSmoothMode}
-            onChange={(event) => setCamSmoothMode(Number(event.target.value))}
-          />
-          <label>
-            <input
-              type="checkbox"
-              checked={camSmoothEnable}
-              onChange={(event) => setCamSmoothEnable(event.target.checked)}
-            />
-            Enable Smoothing
-          </label>
-          <label htmlFor="camSmoothMaxFrames">Max Frames</label>
-          <input
-            id="camSmoothMaxFrames"
-            type="number"
-            value={camSmoothMaxFrames}
-            onChange={(event) => setCamSmoothMaxFrames(Number(event.target.value))}
-          />
-          <label htmlFor="camSmoothMaxDiff">Max Diff</label>
-          <input
-            id="camSmoothMaxDiff"
-            type="number"
-            value={camSmoothMaxDiff}
-            onChange={(event) => setCamSmoothMaxDiff(Number(event.target.value))}
-          />
+        </div>
+      </details>
+      )}
+      <details className="card card-collapsible">
+        <summary className="card-collapsible-summary">
+          <span className="card-collapsible-chevron" aria-hidden>▶</span>
+          Camera Zones & Smoothing
+        </summary>
+        <div className="card-collapsible-body">
+        <div className="form-grid form-grid-pairs">
+          <div className="form-field">
+            <label htmlFor="camInnerPreset">Inner Picture Usage (%)</label>
+            <select
+              id="camInnerPreset"
+              value={camInnerPreset}
+              onChange={async (e) => {
+                const v = Number(e.target.value)
+                setCamInnerPreset(v)
+                try {
+                  await api.setPreset('setcaminnerpreset', v)
+                  setMessage('Inner preset updated')
+                  refresh()
+                } catch (err) {
+                  setMessage(err.message || 'Failed to update preset')
+                }
+              }}
+            >
+              {CAM_INNER_PRESET_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          {camInnerPreset === 999 && (
+            <>
+              <div className="form-field">
+                <label htmlFor="camInnerHori">Inner Horizontal (custom)</label>
+                <input
+                  id="camInnerHori"
+                  type="number"
+                  step="0.01"
+                  value={camInnerHori}
+                  onChange={(event) => setCamInnerHori(Number(event.target.value))}
+                />
+              </div>
+              <div className="form-field">
+                <label htmlFor="camInnerVert">Inner Vertical (custom)</label>
+                <input
+                  id="camInnerVert"
+                  type="number"
+                  step="0.01"
+                  value={camInnerVert}
+                  onChange={(event) => setCamInnerVert(Number(event.target.value))}
+                />
+              </div>
+            </>
+          )}
+          <div className="form-field">
+            <label htmlFor="camDetailLevel">Detail Level (sectors per side)</label>
+            <select
+              id="camDetailLevel"
+              value={[3, 5, 7, 9, 11, 13, 15].includes(camDetailLevel) ? camDetailLevel : 7}
+              onChange={(e) => setCamDetailLevel(Number(e.target.value))}
+            >
+              {CAM_DETAIL_LEVEL_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="form-field">
+            <label htmlFor="camSmoothMode">Smooth Mode</label>
+            <select
+              id="camSmoothMode"
+              value={camSmoothMode}
+              onChange={(e) => setCamSmoothMode(Number(e.target.value))}
+            >
+              {CAM_SMOOTH_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="form-field">
+            <label>
+              <input
+                type="checkbox"
+                checked={camSmoothEnable}
+                onChange={async (e) => {
+                  const v = e.target.checked
+                  setCamSmoothEnable(v)
+                  await updateParam('setcSmoothenable', v ? 1 : 0)
+                }}
+              />
+              Enable Smoothing
+            </label>
+          </div>
+          <div className="form-field">
+            <label htmlFor="camSmoothMaxFrames">Max Frames</label>
+            <div className="range-row">
+              <input
+                id="camSmoothMaxFrames"
+                type="range"
+                min="1"
+                max="8"
+                value={camSmoothMaxFrames}
+                onChange={(e) => setCamSmoothMaxFrames(Number(e.target.value))}
+              />
+              <span className="muted">{camSmoothMaxFrames}</span>
+            </div>
+          </div>
+          <div className="form-field">
+            <label htmlFor="camSmoothMaxDiff">Max Diff</label>
+            <div className="range-row">
+              <input
+                id="camSmoothMaxDiff"
+                type="range"
+                min="8"
+                max="240"
+                step="8"
+                value={camSmoothMaxDiff}
+                onChange={(e) => setCamSmoothMaxDiff(Number(e.target.value))}
+              />
+              <span className="muted">{camSmoothMaxDiff}</span>
+            </div>
+          </div>
         </div>
         <button
           type="button"
@@ -340,27 +801,39 @@ export default function CameraPage() {
         >
           Apply Zone & Smoothing
         </button>
-      </section>
-      <section className="card">
-        <header className="card-header">
-          <h2>Auto On/Off</h2>
-        </header>
-        <div className="form-grid">
-          <label>
-            <input
-              type="checkbox"
-              checked={camAutoOnOff}
-              onChange={(event) => setCamAutoOnOff(event.target.checked)}
-            />
-            Automatic Camera Stop
-          </label>
-          <label htmlFor="camAutoOnOffDelay">Off Delay (seconds)</label>
-          <input
-            id="camAutoOnOffDelay"
-            type="number"
-            value={camAutoOnOffDelay}
-            onChange={(event) => setCamAutoOnOffDelay(Number(event.target.value))}
-          />
+        </div>
+      </details>
+      <details className="card card-collapsible">
+        <summary className="card-collapsible-summary">
+          <span className="card-collapsible-chevron" aria-hidden>▶</span>
+          Auto On/Off
+        </summary>
+        <div className="card-collapsible-body">
+        <div className="form-grid form-grid-pairs">
+          <div className="form-field">
+            <label>
+              <input
+                type="checkbox"
+                checked={camAutoOnOff}
+                onChange={(event) => setCamAutoOnOff(event.target.checked)}
+              />
+              Automatic Camera Stop
+            </label>
+          </div>
+          <div className="form-field">
+            <label htmlFor="camAutoOnOffDelay">Off Delay (seconds)</label>
+            <select
+              id="camAutoOnOffDelay"
+              value={CAM_AUTO_OFF_DELAY_OPTIONS.some((o) => o.value === camAutoOnOffDelay) ? camAutoOnOffDelay : 15}
+              onChange={(e) => setCamAutoOnOffDelay(Number(e.target.value))}
+            >
+              {CAM_AUTO_OFF_DELAY_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
         <button
           type="button"
@@ -374,70 +847,282 @@ export default function CameraPage() {
         >
           Apply Auto Settings
         </button>
-      </section>
-      <section className="card">
-        <header className="card-header">
-          <h2>Color Thresholds</h2>
-        </header>
-        <div className="form-grid">
-          <label htmlFor="camColorRed">Red</label>
-          <input
-            id="camColorRed"
-            type="range"
-            min="0"
-            max="255"
-            value={camColorRed}
-            onChange={(event) => setCamColorRed(Number(event.target.value))}
-          />
-          <div className="muted">{camColorRed}</div>
-          <label htmlFor="camColorGreen">Green</label>
-          <input
-            id="camColorGreen"
-            type="range"
-            min="0"
-            max="255"
-            value={camColorGreen}
-            onChange={(event) => setCamColorGreen(Number(event.target.value))}
-          />
-          <div className="muted">{camColorGreen}</div>
-          <label htmlFor="camColorBlue">Blue</label>
-          <input
-            id="camColorBlue"
-            type="range"
-            min="0"
-            max="255"
-            value={camColorBlue}
-            onChange={(event) => setCamColorBlue(Number(event.target.value))}
-          />
-          <div className="muted">{camColorBlue}</div>
-          <label htmlFor="camActivationThreshold">Activation Threshold</label>
-          <input
-            id="camActivationThreshold"
-            type="number"
-            value={camActivationThreshold}
-            onChange={(event) => setCamActivationThreshold(Number(event.target.value))}
-          />
-          <label htmlFor="camBlackThresholdSmooth">Black Threshold Smooth</label>
-          <input
-            id="camBlackThresholdSmooth"
-            type="number"
-            value={camBlackThresholdSmooth}
-            onChange={(event) => setCamBlackThresholdSmooth(Number(event.target.value))}
-          />
-          <label htmlFor="camBlackRemoveThreshold">Black Remove Threshold</label>
-          <input
-            id="camBlackRemoveThreshold"
-            type="number"
-            value={camBlackRemoveThreshold}
-            onChange={(event) => setCamBlackRemoveThreshold(Number(event.target.value))}
-          />
-          <label htmlFor="camMinPixelAmount">Min Pixel Amount</label>
-          <input
-            id="camMinPixelAmount"
-            type="number"
-            value={camMinPixelAmount}
-            onChange={(event) => setCamMinPixelAmount(Number(event.target.value))}
-          />
+        </div>
+      </details>
+      <details className="card card-collapsible">
+        <summary className="card-collapsible-summary">
+          <span className="card-collapsible-chevron" aria-hidden>▶</span>
+          Color Thresholds & Enhancement
+        </summary>
+        <div className="card-collapsible-body">
+        <div className="form-grid form-grid-pairs">
+          <div className="form-field">
+            <label htmlFor="colorPreset">Color Enhancement</label>
+            <select
+              id="colorPreset"
+              value={colorPreset}
+              onChange={async (e) => {
+                const v = Number(e.target.value)
+                setColorPreset(v)
+                try {
+                  await api.setPreset('setcolorpreset', v)
+                  setMessage('Color preset updated')
+                  refresh()
+                } catch (err) {
+                  setMessage(err.message || 'Failed to update preset')
+                }
+              }}
+            >
+              {CAM_COLOR_PRESET_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="form-field">
+            <label htmlFor="brightnessPreset">Brightness Preset</label>
+            <select
+              id="brightnessPreset"
+              value={brightnessPreset}
+              onChange={async (e) => {
+                const v = Number(e.target.value)
+                setBrightnessPreset(v)
+                try {
+                  await api.setPreset('setbrightnesspreset', v)
+                  setMessage('Brightness preset updated')
+                  refresh()
+                } catch (err) {
+                  setMessage(err.message || 'Failed to update preset')
+                }
+              }}
+            >
+              {CAM_BRIGHTNESS_PRESET_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          {colorPreset === 999 && (
+            <>
+              <div className="form-field">
+                <label htmlFor="colorBoost">Color Boost</label>
+                <div className="range-row">
+                  <input
+                    id="colorBoost"
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="5"
+                    value={colorBoost}
+                    onChange={(e) => setColorBoost(Number(e.target.value))}
+                  />
+                  <span className="muted">{colorBoost}</span>
+                </div>
+              </div>
+              <div className="form-field">
+                <label htmlFor="colorBoostBalance">Boost Balance</label>
+                <div className="range-row">
+                  <input
+                    id="colorBoostBalance"
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="5"
+                    value={colorBoostBalance}
+                    onChange={(e) => setColorBoostBalance(Number(e.target.value))}
+                  />
+                  <span className="muted">{colorBoostBalance}</span>
+                </div>
+              </div>
+              <div className="form-field">
+                <label htmlFor="colorBoostMin">Boost Smoothing</label>
+                <div className="range-row">
+                  <input
+                    id="colorBoostMin"
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="5"
+                    value={colorBoostMin}
+                    onChange={(e) => setColorBoostMin(Number(e.target.value))}
+                  />
+                  <span className="muted">{colorBoostMin}</span>
+                </div>
+              </div>
+              <div className="form-field">
+                <label htmlFor="colorBoostThreshold">Boost Threshold</label>
+                <div className="range-row">
+                  <input
+                    id="colorBoostThreshold"
+                    type="range"
+                    min="0"
+                    max="255"
+                    step="5"
+                    value={colorBoostThreshold}
+                    onChange={(e) => setColorBoostThreshold(Number(e.target.value))}
+                  />
+                  <span className="muted">{colorBoostThreshold}</span>
+                </div>
+              </div>
+              <div className="form-field">
+                <label htmlFor="colorBoostRed">Red Boost</label>
+                <div className="range-row">
+                  <input
+                    id="colorBoostRed"
+                    type="range"
+                    min="5"
+                    max="100"
+                    step="5"
+                    value={colorBoostRed}
+                    onChange={(e) => setColorBoostRed(Number(e.target.value))}
+                  />
+                  <span className="muted">{colorBoostRed}</span>
+                </div>
+              </div>
+              <div className="form-field">
+                <label htmlFor="colorBoostGreen">Green Boost</label>
+                <div className="range-row">
+                  <input
+                    id="colorBoostGreen"
+                    type="range"
+                    min="5"
+                    max="100"
+                    step="5"
+                    value={colorBoostGreen}
+                    onChange={(e) => setColorBoostGreen(Number(e.target.value))}
+                  />
+                  <span className="muted">{colorBoostGreen}</span>
+                </div>
+              </div>
+              <div className="form-field">
+                <label htmlFor="colorBoostBlue">Blue Boost</label>
+                <div className="range-row">
+                  <input
+                    id="colorBoostBlue"
+                    type="range"
+                    min="5"
+                    max="100"
+                    step="5"
+                    value={colorBoostBlue}
+                    onChange={(e) => setColorBoostBlue(Number(e.target.value))}
+                  />
+                  <span className="muted">{colorBoostBlue}</span>
+                </div>
+              </div>
+            </>
+          )}
+          {brightnessPreset === 999 && (
+            <div className="form-field">
+              <label htmlFor="colorValueGain">Brightness (%)</label>
+              <div className="range-row">
+                <input
+                  id="colorValueGain"
+                  type="range"
+                  min="5"
+                  max="500"
+                  step="5"
+                  value={colorValueGain}
+                  onChange={(e) => setColorValueGain(Number(e.target.value))}
+                />
+                <span className="muted">{colorValueGain}</span>
+              </div>
+            </div>
+          )}
+          <div className="form-field">
+            <label htmlFor="minimumLuminosity">Minimum Luminosity</label>
+            <div className="range-row">
+              <input
+                id="minimumLuminosity"
+                type="range"
+                min="0"
+                max="255"
+                step="5"
+                value={minimumLuminosity}
+                onChange={(e) => setMinimumLuminosity(Number(e.target.value))}
+              />
+              <span className="muted">{minimumLuminosity}</span>
+            </div>
+          </div>
+          <div className="form-field">
+            <label htmlFor="camColorRed">Red</label>
+            <div className="range-row">
+              <input
+                id="camColorRed"
+                type="range"
+                min="0"
+                max="255"
+                value={camColorRed}
+                onChange={(event) => setCamColorRed(Number(event.target.value))}
+              />
+              <span className="muted">{camColorRed}</span>
+            </div>
+          </div>
+          <div className="form-field">
+            <label htmlFor="camColorGreen">Green</label>
+            <div className="range-row">
+              <input
+                id="camColorGreen"
+                type="range"
+                min="0"
+                max="255"
+                value={camColorGreen}
+                onChange={(event) => setCamColorGreen(Number(event.target.value))}
+              />
+              <span className="muted">{camColorGreen}</span>
+            </div>
+          </div>
+          <div className="form-field">
+            <label htmlFor="camColorBlue">Blue</label>
+            <div className="range-row">
+              <input
+                id="camColorBlue"
+                type="range"
+                min="0"
+                max="255"
+                value={camColorBlue}
+                onChange={(event) => setCamColorBlue(Number(event.target.value))}
+              />
+              <span className="muted">{camColorBlue}</span>
+            </div>
+          </div>
+          <div className="form-field">
+            <label htmlFor="camActivationThreshold">Activation Threshold</label>
+            <input
+              id="camActivationThreshold"
+              type="number"
+              value={camActivationThreshold}
+              onChange={(event) => setCamActivationThreshold(Number(event.target.value))}
+            />
+          </div>
+          <div className="form-field">
+            <label htmlFor="camBlackThresholdSmooth">Black Threshold Smooth</label>
+            <input
+              id="camBlackThresholdSmooth"
+              type="number"
+              value={camBlackThresholdSmooth}
+              onChange={(event) => setCamBlackThresholdSmooth(Number(event.target.value))}
+            />
+          </div>
+          <div className="form-field">
+            <label htmlFor="camBlackRemoveThreshold">Black Remove Threshold</label>
+            <input
+              id="camBlackRemoveThreshold"
+              type="number"
+              value={camBlackRemoveThreshold}
+              onChange={(event) => setCamBlackRemoveThreshold(Number(event.target.value))}
+            />
+          </div>
+          <div className="form-field">
+            <label htmlFor="camMinPixelAmount">Min Pixel Amount</label>
+            <input
+              id="camMinPixelAmount"
+              type="number"
+              value={camMinPixelAmount}
+              onChange={(event) => setCamMinPixelAmount(Number(event.target.value))}
+            />
+          </div>
         </div>
         <button
           type="button"
@@ -453,123 +1138,203 @@ export default function CameraPage() {
             if (hasParam('camcolorblackremovethreshold'))
               pairs.push(['setcamblackremovethreshold', camBlackRemoveThreshold])
             if (hasParam('camminpixelamount')) pairs.push(['setcamminpixelamount', camMinPixelAmount])
+            if (hasParam('colorboost')) pairs.push(['setcolorboost', colorBoost])
+            if (hasParam('colorboostbalance')) pairs.push(['setcolorboostbalance', colorBoostBalance])
+            if (hasParam('colorboostmin')) pairs.push(['setcolorboostmin', colorBoostMin])
+            if (hasParam('colorboostthreshold')) pairs.push(['setcolorboostthreshold', colorBoostThreshold])
+            if (hasParam('colorboostred')) pairs.push(['setcolorboostred', colorBoostRed])
+            if (hasParam('colorboostgreen')) pairs.push(['setcolorboostgreen', colorBoostGreen])
+            if (hasParam('colorboostblue')) pairs.push(['setcolorboostblue', colorBoostBlue])
+            if (hasParam('colorvaluegain')) pairs.push(['setcolorvaluegain', colorValueGain])
+            if (hasParam('minimumluminosity')) pairs.push(['setminimumluminosity', minimumLuminosity])
             applyParams(pairs)
           }}
         >
           Apply Thresholds
         </button>
-      </section>
-      <section className="card">
-        <header className="card-header">
-          <h2>Image Adjustments</h2>
-        </header>
-        <div className="form-grid">
-          <label htmlFor="camContrast">Contrast</label>
-          <input
-            id="camContrast"
-            type="number"
-            value={camContrast}
-            onChange={(event) => setCamContrast(Number(event.target.value))}
-          />
-          <label htmlFor="camBrightness">Brightness</label>
-          <input
-            id="camBrightness"
-            type="number"
-            value={camBrightness}
-            onChange={(event) => setCamBrightness(Number(event.target.value))}
-          />
-          <label htmlFor="camSaturation">Saturation</label>
-          <input
-            id="camSaturation"
-            type="number"
-            value={camSaturation}
-            onChange={(event) => setCamSaturation(Number(event.target.value))}
-          />
-          <label htmlFor="camQuality">JPEG Quality</label>
-          <input
-            id="camQuality"
-            type="number"
-            value={camQuality}
-            onChange={(event) => setCamQuality(Number(event.target.value))}
-          />
-          <label htmlFor="camSpecialEffect">Special Effect</label>
-          <input
-            id="camSpecialEffect"
-            type="number"
-            value={camSpecialEffect}
-            onChange={(event) => setCamSpecialEffect(Number(event.target.value))}
-          />
-          <label htmlFor="camWbMode">White Balance</label>
-          <input
-            id="camWbMode"
-            type="number"
-            value={camWbMode}
-            onChange={(event) => setCamWbMode(Number(event.target.value))}
-          />
-          <label>
-            <input
-              type="checkbox"
-              checked={camAwbGainControl}
-              onChange={(event) => setCamAwbGainControl(event.target.checked)}
-            />
-            AWB Gain Control
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              checked={camHMirror}
-              onChange={(event) => setCamHMirror(event.target.checked)}
-            />
-            Mirror Horizontally
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              checked={camVFlip}
-              onChange={(event) => setCamVFlip(event.target.checked)}
-            />
-            Flip Vertically
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              checked={camHighQuality}
-              onChange={(event) => setCamHighQuality(event.target.checked)}
-            />
-            High Quality
-          </label>
-          <label>
-            <input type="checkbox" checked={camBpc} onChange={(event) => setCamBpc(event.target.checked)} />
-            BPC
-          </label>
-          <label>
-            <input type="checkbox" checked={camWpc} onChange={(event) => setCamWpc(event.target.checked)} />
-            WPC
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              checked={camDenoise}
-              onChange={(event) => setCamDenoise(event.target.checked)}
-            />
-            Denoise
-          </label>
-          <label>
-            <input type="checkbox" checked={camLenc} onChange={(event) => setCamLenc(event.target.checked)} />
-            Lenc
-          </label>
-          <label>
-            <input
-              type="checkbox"
-              checked={camRawGma}
-              onChange={(event) => setCamRawGma(event.target.checked)}
-            />
-            Raw GMA
-          </label>
-          <label>
-            <input type="checkbox" checked={camDcw} onChange={(event) => setCamDcw(event.target.checked)} />
-            DCW
-          </label>
+        </div>
+      </details>
+      <details className="card card-collapsible">
+        <summary className="card-collapsible-summary">
+          <span className="card-collapsible-chevron" aria-hidden>▶</span>
+          Image Adjustments
+        </summary>
+        <div className="card-collapsible-body">
+        <div className="form-grid form-grid-pairs">
+          <div className="form-field">
+            <label htmlFor="camContrast">Contrast</label>
+            <select
+              id="camContrast"
+              value={CAM_LEVEL_OPTIONS.some((o) => o.value === camContrast) ? camContrast : 0}
+              onChange={(e) => setCamContrast(Number(e.target.value))}
+            >
+              {CAM_LEVEL_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="form-field">
+            <label htmlFor="camBrightness">Brightness</label>
+            <select
+              id="camBrightness"
+              value={CAM_LEVEL_OPTIONS.some((o) => o.value === camBrightness) ? camBrightness : 0}
+              onChange={(e) => setCamBrightness(Number(e.target.value))}
+            >
+              {CAM_LEVEL_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="form-field">
+            <label htmlFor="camSaturation">Saturation</label>
+            <select
+              id="camSaturation"
+              value={CAM_LEVEL_OPTIONS.some((o) => o.value === camSaturation) ? camSaturation : 0}
+              onChange={(e) => setCamSaturation(Number(e.target.value))}
+            >
+              {CAM_LEVEL_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="form-field">
+            <label htmlFor="camQuality">JPEG Quality</label>
+            <div className="range-row">
+              <input
+                id="camQuality"
+                type="range"
+                min="0"
+                max="63"
+                value={Math.max(0, Math.min(63, camQuality))}
+                onChange={(e) => setCamQuality(Number(e.target.value))}
+              />
+              <span className="muted">{camQuality}</span>
+            </div>
+          </div>
+          <div className="form-field">
+            <label htmlFor="camSpecialEffect">Special Effect</label>
+            <select
+              id="camSpecialEffect"
+              value={Math.max(0, Math.min(6, camSpecialEffect))}
+              onChange={(e) => setCamSpecialEffect(Number(e.target.value))}
+            >
+              {CAM_SPECIAL_EFFECT_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="form-field">
+            <label htmlFor="camWbMode">White Balance</label>
+            <select
+              id="camWbMode"
+              value={CAM_WB_MODE_OPTIONS.some((o) => o.value === camWbMode) ? camWbMode : 0}
+              onChange={(e) => setCamWbMode(Number(e.target.value))}
+            >
+              {CAM_WB_MODE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="form-field">
+            <label>
+              <input
+                type="checkbox"
+                checked={camAwbGainControl}
+                onChange={(event) => setCamAwbGainControl(event.target.checked)}
+              />
+              AWB Gain Control
+            </label>
+          </div>
+          <div className="form-field">
+            <label>
+              <input
+                type="checkbox"
+                checked={camHMirror}
+                onChange={async (e) => {
+                  const v = e.target.checked
+                  setCamHMirror(v)
+                  await updateParam('setcamhmirror', v ? 1 : 0)
+                }}
+              />
+              Mirror Horizontally
+            </label>
+          </div>
+          <div className="form-field">
+            <label>
+              <input
+                type="checkbox"
+                checked={camVFlip}
+                onChange={async (e) => {
+                  const v = e.target.checked
+                  setCamVFlip(v)
+                  await updateParam('setcamvflip', v ? 1 : 0)
+                }}
+              />
+              Flip Vertically
+            </label>
+          </div>
+          <div className="form-field">
+            <label>
+              <input
+                type="checkbox"
+                checked={camHighQuality}
+                onChange={async (e) => {
+                  const v = e.target.checked
+                  setCamHighQuality(v)
+                  await updateParam('setcamhighquality', v ? 1 : 0)
+                }}
+              />
+              High Quality
+            </label>
+          </div>
+          <div className="form-field">
+            <label>
+              <input type="checkbox" checked={camBpc} onChange={(event) => setCamBpc(event.target.checked)} />
+              BPC
+            </label>
+          </div>
+          <div className="form-field">
+            <label>
+              <input type="checkbox" checked={camWpc} onChange={(event) => setCamWpc(event.target.checked)} />
+              WPC
+            </label>
+          </div>
+          <div className="form-field">
+            <label>
+              <input
+                type="checkbox"
+                checked={camDenoise}
+                onChange={(event) => setCamDenoise(event.target.checked)}
+              />
+              Denoise
+            </label>
+          </div>
+          <div className="form-field">
+            <label>
+              <input type="checkbox" checked={camLenc} onChange={(event) => setCamLenc(event.target.checked)} />
+              Lenc
+            </label>
+          </div>
+          <div className="form-field">
+            <label>
+              <input
+                type="checkbox"
+                checked={camRawGma}
+                onChange={(event) => setCamRawGma(event.target.checked)}
+              />
+              Raw GMA
+            </label>
+          </div>
         </div>
         <button
           type="button"
@@ -591,126 +1356,260 @@ export default function CameraPage() {
             if (hasParam('camdenoise')) pairs.push(['setcamdenoise', camDenoise ? 1 : 0])
             if (hasParam('camlenc')) pairs.push(['setcamlenc', camLenc ? 1 : 0])
             if (hasParam('camrawgma')) pairs.push(['setcamrawgma', camRawGma ? 1 : 0])
-            if (hasParam('camdcw')) pairs.push(['setcamdcw', camDcw ? 1 : 0])
             applyParams(pairs)
           }}
         >
           Apply Image Adjustments
         </button>
-      </section>
-      <section className="card">
-        <header className="card-header">
-          <h2>Exposure</h2>
-        </header>
-        <div className="form-grid">
-          <label>
-            <input type="checkbox" checked={camAec} onChange={(event) => setCamAec(event.target.checked)} />
-            Auto Exposure
-          </label>
-          <label>
-            <input type="checkbox" checked={camAec2} onChange={(event) => setCamAec2(event.target.checked)} />
-            Auto Exposure 2
-          </label>
-          <label htmlFor="camAeLevels">AE Levels</label>
-          <input
-            id="camAeLevels"
-            type="number"
-            value={camAeLevels}
-            onChange={(event) => setCamAeLevels(Number(event.target.value))}
-          />
-          <label htmlFor="camAecValue">AEC Value</label>
-          <input
-            id="camAecValue"
-            type="number"
-            value={camAecValue}
-            onChange={(event) => setCamAecValue(Number(event.target.value))}
-          />
-          <label htmlFor="camAecMinValue">AEC Min</label>
-          <input
-            id="camAecMinValue"
-            type="number"
-            value={camAecMinValue}
-            onChange={(event) => setCamAecMinValue(Number(event.target.value))}
-          />
-          <label htmlFor="camAecMaxValue">AEC Max</label>
-          <input
-            id="camAecMaxValue"
-            type="number"
-            value={camAecMaxValue}
-            onChange={(event) => setCamAecMaxValue(Number(event.target.value))}
-          />
-          <label>
+        {advanced && (
+          <div className="form-grid form-grid-pairs" style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--border, #2a3042)' }}>
+            <h3 className="form-section-title" style={{ gridColumn: '1 / -1', color: 'var(--muted, #9aa2b3)', fontSize: '0.85rem' }}>
+              Developer Options
+            </h3>
+            <div className="form-field">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={camDcw}
+                  onChange={async (e) => {
+                    const v = e.target.checked
+                    setCamDcw(v)
+                    try {
+                      await api.setParam('setcamdcw', v ? 1 : 0)
+                      setMessage('Saved')
+                      refresh()
+                    } catch (err) {
+                      setMessage(err.message || 'Failed')
+                    }
+                  }}
+                />
+                Downsize Control (DCW)
+              </label>
+            </div>
+            {hasParam('camoverclock') && (
+              <div className="form-field">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={camOverclock}
+                    onChange={async (e) => {
+                      const v = e.target.checked
+                      setCamOverclock(v)
+                      try {
+                        await api.setParam('setcamoverclock', v ? 1 : 0)
+                        setMessage('Saved')
+                        refresh()
+                      } catch (err) {
+                        setMessage(err.message || 'Failed')
+                      }
+                    }}
+                  />
+                  Overclock Camera Sensor
+                </label>
+              </div>
+            )}
+            <div className="form-field">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={camColorbar}
+                  onChange={async (e) => {
+                    const v = e.target.checked
+                    setCamColorbar(v)
+                    try {
+                      await api.setParam('setcamcolorbar', v ? 1 : 0)
+                      setMessage('Saved')
+                      refresh()
+                    } catch (err) {
+                      setMessage(err.message || 'Failed')
+                    }
+                  }}
+                />
+                Enable Colorbar
+              </label>
+            </div>
+            {hasParam('camagainceilingsensor') && (
+              <div className="form-field">
+                <label htmlFor="camGainceilingSensor">Gainceiling Sensor</label>
+                <select
+                  id="camGainceilingSensor"
+                  value={camGainceilingSensor}
+                  onChange={async (e) => {
+                    const v = Number(e.target.value)
+                    setCamGainceilingSensor(v)
+                    try {
+                      await api.setParam('setcamagainceilingsensor', v)
+                      setMessage('Saved')
+                      refresh()
+                    } catch (err) {
+                      setMessage(err.message || 'Failed')
+                    }
+                  }}
+                >
+                  {CAM_GAINCEILING_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+        )}
+        </div>
+      </details>
+      <details className="card card-collapsible">
+        <summary className="card-collapsible-summary">
+          <span className="card-collapsible-chevron" aria-hidden>▶</span>
+          Exposure
+        </summary>
+        <div className="card-collapsible-body">
+        <div className="form-grid form-grid-pairs">
+          <div className="form-field">
+            <label>
+              <input type="checkbox" checked={camAec} onChange={(event) => setCamAec(event.target.checked)} />
+              Auto Exposure
+            </label>
+          </div>
+          <div className="form-field">
+            <label>
+              <input type="checkbox" checked={camAec2} onChange={(event) => setCamAec2(event.target.checked)} />
+              Auto Exposure 2
+            </label>
+          </div>
+          <div className="form-field">
+            <label htmlFor="camAeLevels">AE Levels</label>
+            <select
+              id="camAeLevels"
+              value={CAM_LEVEL_OPTIONS.some((o) => o.value === camAeLevels) ? camAeLevels : 0}
+              onChange={(e) => setCamAeLevels(Number(e.target.value))}
+            >
+              {CAM_LEVEL_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="form-field">
+            <label htmlFor="camAecValue">AEC Value</label>
             <input
-              type="checkbox"
-              checked={camAdptExp}
-              onChange={(event) => setCamAdptExp(event.target.checked)}
+              id="camAecValue"
+              type="number"
+              value={camAecValue}
+              onChange={(event) => setCamAecValue(Number(event.target.value))}
             />
-            Adaptive Exposure
-          </label>
-          <label>
+          </div>
+          <div className="form-field">
+            <label htmlFor="camAecMinValue">AEC Min</label>
             <input
-              type="checkbox"
-              checked={camAdptGain}
-              onChange={(event) => setCamAdptGain(event.target.checked)}
+              id="camAecMinValue"
+              type="number"
+              value={camAecMinValue}
+              onChange={(event) => setCamAecMinValue(Number(event.target.value))}
             />
-            Adaptive Gain
-          </label>
-          <label htmlFor="camAdptGainDown">Gain Down</label>
-          <input
-            id="camAdptGainDown"
-            type="number"
-            value={camAdptGainDown}
-            onChange={(event) => setCamAdptGainDown(Number(event.target.value))}
-          />
-          <label htmlFor="camAdptGainUp">Gain Up</label>
-          <input
-            id="camAdptGainUp"
-            type="number"
-            value={camAdptGainUp}
-            onChange={(event) => setCamAdptGainUp(Number(event.target.value))}
-          />
-          <label htmlFor="camAdptGainMax">Gain Max</label>
-          <input
-            id="camAdptGainMax"
-            type="number"
-            value={camAdptGainMax}
-            onChange={(event) => setCamAdptGainMax(Number(event.target.value))}
-          />
-          <label htmlFor="camWhiteActThreshold">White Activation</label>
-          <input
-            id="camWhiteActThreshold"
-            type="number"
-            value={camWhiteActThreshold}
-            onChange={(event) => setCamWhiteActThreshold(Number(event.target.value))}
-          />
-          <label htmlFor="camWhiteBeforeActThreshold">White Before Activation</label>
-          <input
-            id="camWhiteBeforeActThreshold"
-            type="number"
-            value={camWhiteBeforeActThreshold}
-            onChange={(event) => setCamWhiteBeforeActThreshold(Number(event.target.value))}
-          />
-          <label htmlFor="camWhiteMinAmount">White Min Amount</label>
-          <input
-            id="camWhiteMinAmount"
-            type="number"
-            value={camWhiteMinAmount}
-            onChange={(event) => setCamWhiteMinAmount(Number(event.target.value))}
-          />
-          <label htmlFor="camAdaptiveChangePercent">Adaptive Change %</label>
-          <input
-            id="camAdaptiveChangePercent"
-            type="number"
-            value={camAdaptiveChangePercent}
-            onChange={(event) => setCamAdaptiveChangePercent(Number(event.target.value))}
-          />
-          <label htmlFor="camAdaptiveChangeDelay">Adaptive Change Delay</label>
-          <input
-            id="camAdaptiveChangeDelay"
-            type="number"
-            value={camAdaptiveChangeDelay}
-            onChange={(event) => setCamAdaptiveChangeDelay(Number(event.target.value))}
-          />
+          </div>
+          <div className="form-field">
+            <label htmlFor="camAecMaxValue">AEC Max</label>
+            <input
+              id="camAecMaxValue"
+              type="number"
+              value={camAecMaxValue}
+              onChange={(event) => setCamAecMaxValue(Number(event.target.value))}
+            />
+          </div>
+          <div className="form-field">
+            <label>
+              <input
+                type="checkbox"
+                checked={camAdptExp}
+                onChange={(event) => setCamAdptExp(event.target.checked)}
+              />
+              Adaptive Exposure
+            </label>
+          </div>
+          <div className="form-field">
+            <label>
+              <input
+                type="checkbox"
+                checked={camAdptGain}
+                onChange={(event) => setCamAdptGain(event.target.checked)}
+              />
+              Adaptive Gain
+            </label>
+          </div>
+          <div className="form-field">
+            <label htmlFor="camAdptGainDown">Gain Down</label>
+            <input
+              id="camAdptGainDown"
+              type="number"
+              value={camAdptGainDown}
+              onChange={(event) => setCamAdptGainDown(Number(event.target.value))}
+            />
+          </div>
+          <div className="form-field">
+            <label htmlFor="camAdptGainUp">Gain Up</label>
+            <input
+              id="camAdptGainUp"
+              type="number"
+              value={camAdptGainUp}
+              onChange={(event) => setCamAdptGainUp(Number(event.target.value))}
+            />
+          </div>
+          <div className="form-field">
+            <label htmlFor="camAdptGainMax">Gain Max</label>
+            <input
+              id="camAdptGainMax"
+              type="number"
+              value={camAdptGainMax}
+              onChange={(event) => setCamAdptGainMax(Number(event.target.value))}
+            />
+          </div>
+          <div className="form-field">
+            <label htmlFor="camWhiteActThreshold">White Activation</label>
+            <input
+              id="camWhiteActThreshold"
+              type="number"
+              value={camWhiteActThreshold}
+              onChange={(event) => setCamWhiteActThreshold(Number(event.target.value))}
+            />
+          </div>
+          <div className="form-field">
+            <label htmlFor="camWhiteBeforeActThreshold">White Before Activation</label>
+            <input
+              id="camWhiteBeforeActThreshold"
+              type="number"
+              value={camWhiteBeforeActThreshold}
+              onChange={(event) => setCamWhiteBeforeActThreshold(Number(event.target.value))}
+            />
+          </div>
+          <div className="form-field">
+            <label htmlFor="camWhiteMinAmount">White Min Amount</label>
+            <input
+              id="camWhiteMinAmount"
+              type="number"
+              value={camWhiteMinAmount}
+              onChange={(event) => setCamWhiteMinAmount(Number(event.target.value))}
+            />
+          </div>
+          <div className="form-field">
+            <label htmlFor="camAdaptiveChangePercent">Adaptive Change %</label>
+            <input
+              id="camAdaptiveChangePercent"
+              type="number"
+              value={camAdaptiveChangePercent}
+              onChange={(event) => setCamAdaptiveChangePercent(Number(event.target.value))}
+            />
+          </div>
+          <div className="form-field">
+            <label htmlFor="camAdaptiveChangeDelay">Adaptive Change Delay</label>
+            <input
+              id="camAdaptiveChangeDelay"
+              type="number"
+              value={camAdaptiveChangeDelay}
+              onChange={(event) => setCamAdaptiveChangeDelay(Number(event.target.value))}
+            />
+          </div>
         </div>
         <button
           type="button"
@@ -744,7 +1643,8 @@ export default function CameraPage() {
         >
           Apply Exposure
         </button>
-      </section>
+        </div>
+      </details>
       {message && <div className="muted">{message}</div>}
     </div>
   )

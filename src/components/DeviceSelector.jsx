@@ -114,8 +114,10 @@ export default function DeviceSelector() {
     const url = item?.ip || (item?.DeviceIP ? `http://${item.DeviceIP}` : null)
     if (url) {
       updateBaseUrl(normalizeBaseUrl(url))
+      setDiscoverResults(null)
     } else if (typeof item === 'string') {
       updateBaseUrl(normalizeBaseUrl(item))
+      setDiscoverResults(null)
     }
   }
 
