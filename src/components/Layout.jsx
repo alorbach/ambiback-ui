@@ -13,6 +13,7 @@ const navItems = [
   { to: '/hue', label: 'Hue', cap: 'hue' },
   { to: '/ambient', label: 'Ambient', cap: 'ambient' },
   { to: '/dreamscreen', label: 'DreamScreen', cap: 'dreamscreen' },
+  { to: '/firmware', label: 'Firmware', cap: 'firmware' },
 ]
 
 export default function Layout({ children }) {
@@ -20,7 +21,9 @@ export default function Layout({ children }) {
   const { advanced, setAdvanced, statusRefreshInterval, setStatusRefreshInterval, refreshIntervalOptions } =
     useUiSettings()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
-  const visibleItems = navItems.filter((item) => (loading ? item.cap !== 'camera' && item.cap !== 'hue' && item.cap !== 'dreamscreen' : caps[item.cap]))
+  const visibleItems = navItems.filter((item) =>
+    loading ? item.cap !== 'camera' && item.cap !== 'hue' && item.cap !== 'dreamscreen' : caps[item.cap]
+  )
 
   return (
     <div className="app-shell">

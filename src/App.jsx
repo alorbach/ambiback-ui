@@ -7,6 +7,7 @@ import CameraPage from './pages/CameraPage.jsx'
 import HuePage from './pages/HuePage.jsx'
 import DreamscreenPage from './pages/DreamscreenPage.jsx'
 import AmbientPage from './pages/AmbientPage.jsx'
+import FirmwarePage from './pages/FirmwarePage.jsx'
 import { CapabilitiesProvider, useCapabilitiesContext } from './contexts/CapabilitiesContext.jsx'
 import { DeviceProvider } from './contexts/DeviceContext.jsx'
 import { DeviceParamsProvider } from './contexts/DeviceParamsContext.jsx'
@@ -37,6 +38,7 @@ function App() {
           path="/dreamscreen"
           element={<GuardedRoute enabled={caps.dreamscreen} element={<DreamscreenPage />} />}
         />
+        <Route path="/firmware" element={<FirmwarePage />} />
         <Route path="*" element={<Navigate to="/system" replace />} />
       </Routes>
     </Layout>

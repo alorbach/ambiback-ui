@@ -11,6 +11,7 @@ const defaultCapabilities = {
   dreamscreen: false,
   relay: false,
   wifiAp: false,
+  firmware: false,
 }
 
 export default function useCapabilities() {
@@ -22,17 +23,19 @@ export default function useCapabilities() {
 
   const deviceType = readString(params, 'devicetype', '')
   const isBridge = deviceType.toLowerCase().includes('bridge')
+  const camera = hasParam(params, 'camresolution') || hasParam(params, 'cammode')
 
   const caps = {
     system: true,
     color: true,
-    setup: true,
-    ambient: !isBridge,
-    camera: hasParam(params, 'camresolution') || hasParam(params, 'cammode'),
+    setup: !camera, /* LED Setup hidden on CAM modules (old embedded UI behavior) */
+    ambient: !isBridge && !camera, /* Ambient hidden on bridge and CAM modules */
+    camera,
     hue: hasParam(params, 'huesupportenabled') || hasParam(params, 'huebridgeip'),
     dreamscreen: hasParam(params, 'dreamscreensupport') || hasParam(params, 'dreamscreengroupid'),
     relay: hasParam(params, 'ambibackrelayto'),
     wifiAp: hasParam(params, 'deviceapenabled'),
+    firmware: true, /* Always show; page handles missing firmwarebaseurl */
   }
 
   return { caps, loading, error, refresh }

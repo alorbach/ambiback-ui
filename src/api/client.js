@@ -113,6 +113,15 @@ export const api = {
   startWps: () => requestText('/startwps?forreal=1'),
   updateUrl: () => buildUrl('/update'),
 
+  /** Fetch firmware index via device proxy (like old embedded UI). Device fetches from firmware server. */
+  getFirmwareIndex: () => requestJson('/getfirmwareindex'),
+
+  /** Trigger automatic OTA update. version format: "0.4.226" */
+  autoUpdate: (version) => requestJson(`/autoupdate?version=${encodeURIComponent(version)}`),
+
+  /** Poll update status during OTA */
+  updateStatus: () => requestJson('/updatestatus'),
+
   /** Phase 3: GET /discover from known device - returns UDP-discovered devices */
   async discoverViaEndpoint() {
     const base = resolveBaseUrl()

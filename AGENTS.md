@@ -2,8 +2,9 @@
 
 ## Overview
 
-`ambiback-ui` is the modern web UI for AmbiBack devices. It is a Vite + React app
-that talks to the device REST endpoints (e.g. `/getstatusasjson`, `/setparam`).
+`ambiback-ui` is the modern web UI for AmbiBack devices. It is a **separate repository** (or subproject) from the main `AmbiBack.Controller` firmware repo. It is a Vite + React app that talks to the device REST endpoints (e.g. `/getstatusasjson`, `/setparam`).
+
+**Repository split:** Firmware, embedded web, and API endpoints live in the main repo. UI logic, Firmware tab, capabilities gating, and API client live here. See the main repo's `AGENTS.md` section [Repository Split: Main vs ambiback-ui](../AGENTS.md#repository-split-main-vs-ambiback-ui) for the split and commit guidance.
 
 Key concepts:
 - **Capabilities gating**: UI features are shown only if the device exposes

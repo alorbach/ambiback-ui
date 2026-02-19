@@ -12,6 +12,7 @@ const CapabilitiesContext = createContext({
     dreamscreen: false,
     relay: false,
     wifiAp: false,
+    firmware: true,
   },
   loading: true,
   error: '',
