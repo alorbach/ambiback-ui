@@ -463,8 +463,20 @@ button:disabled {
   border-bottom: 1px solid #232836;
 }
 
+.mode-panel-sticky.mode-panel-sticky-compact {
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+}
+
 .mode-panel-sticky .mode-tile-grid {
   margin-bottom: 0;
+}
+
+.mode-panel-sticky.mode-panel-sticky-compact .mode-tile-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  padding-bottom: 2px;
 }
 
 /* Mode tiles (Kacheln) – max 4 per row */
@@ -502,6 +514,17 @@ button:disabled {
   font-weight: 500;
   cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mode-panel-sticky.mode-panel-sticky-compact .mode-tile {
+  min-height: 52px;
+  padding: 6px 4px;
+  font-size: 13px;
+  line-height: 1.1;
+}
+
+.mode-panel-sticky.mode-panel-sticky-compact .mode-tile .mode-tile-label {
+  display: none;
 }
 
 .mode-tile:hover {
@@ -622,6 +645,7 @@ button:disabled {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  -webkit-user-select: none;
   user-select: none;
 }
 
@@ -1205,6 +1229,7 @@ button:disabled {
   font-weight: 600;
   color: #e6e6e6;
   list-style: none;
+  -webkit-user-select: none;
   user-select: none;
 }
 

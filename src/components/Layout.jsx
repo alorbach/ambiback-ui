@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import DeviceSelector from './DeviceSelector.jsx'
 import ModeControls from './ModeControls.jsx'
 import { useCapabilitiesContext } from '../contexts/CapabilitiesContext.jsx'
@@ -21,9 +21,20 @@ export default function Layout({ children }) {
   const { advanced, setAdvanced, statusRefreshInterval, setStatusRefreshInterval, refreshIntervalOptions } =
     useUiSettings()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const [modePanelCompact, setModePanelCompact] = useState(false)
   const visibleItems = navItems.filter((item) =>
     loading ? item.cap !== 'camera' && item.cap !== 'hue' && item.cap !== 'dreamscreen' : caps[item.cap]
   )
+
+  useEffect(() => {
+    const updateModePanelState = () => {
+      setModePanelCompact(window.scrollY > 24)
+    }
+
+    updateModePanelState()
+    window.addEventListener('scroll', updateModePanelState, { passive: true })
+    return () => window.removeEventListener('scroll', updateModePanelState)
+  }, [])
 
   return (
     <div className="app-shell">
@@ -107,7 +118,7 @@ export default function Layout({ children }) {
             <p className="params-loader-text">Connecting to device…</p>
           </div>
         )}
-        <div className="mode-panel-sticky">
+        <div className={`mode-panel-sticky ${modePanelCompact ? 'mode-panel-sticky-compact' : ''}`}>
           <ModeControls />
         </div>
         {children}

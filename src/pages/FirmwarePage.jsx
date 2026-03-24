@@ -3,11 +3,27 @@ import { api } from '../api/client.js'
 import useDeviceParams from '../hooks/useDeviceParams.js'
 import { readString } from '../utils/paramUtils.js'
 
-/** Parse version string "0.4.226" to build number for comparison */
-function parseBuild(versionStr) {
-  if (!versionStr) return 0
+function parseVersion(versionStr) {
+  if (!versionStr) return { major: 0, minor: 0, build: 0 }
   const parts = versionStr.split('.')
-  return parseInt(parts[2] || '0', 10)
+  return {
+    major: parseInt(parts[0] || '0', 10) || 0,
+    minor: parseInt(parts[1] || '0', 10) || 0,
+    build: parseInt(parts[2] || '0', 10) || 0,
+  }
+}
+
+function compareVersions(leftVersion, rightVersion) {
+  const left = parseVersion(leftVersion)
+  const right = parseVersion(rightVersion)
+
+  if (left.major !== right.major) return left.major - right.major
+  if (left.minor !== right.minor) return left.minor - right.minor
+  return left.build - right.build
+}
+
+function isVersionNewerOrEqual(leftVersion, rightVersion) {
+  return compareVersions(leftVersion, rightVersion) >= 0
 }
 
 export default function FirmwarePage() {
@@ -23,7 +39,6 @@ export default function FirmwarePage() {
 
   const deviceVersion = readString(params, 'deviceversion', '')
   const firmwareBaseUrl = readString(params, 'firmwarebaseurl', '')
-  const currentBuild = parseBuild(deviceVersion)
 
   const checkForUpdate = async () => {
     setCheckLoading(true)
@@ -37,7 +52,7 @@ export default function FirmwarePage() {
       const latest = `${major}.${minor}.${build}`
       const opts = []
 
-      opts.push({ value: latest, label: `Latest Version ${latest}${build === currentBuild ? ' (installed)' : ''}` })
+      opts.push({ value: latest, label: `Latest Version ${latest}${isVersionNewerOrEqual(deviceVersion, latest) ? ' (installed)' : ''}` })
       setSelectedVersion(latest)
 
       if (index.allowdowngrade === 1 && Array.isArray(index.downgradebuilds)) {
@@ -59,7 +74,7 @@ export default function FirmwarePage() {
 
       setVersions(opts)
       setFirmwareInfo(index)
-      const hasUpdate = build > currentBuild || index.forceupdate === 1
+      const hasUpdate = !isVersionNewerOrEqual(deviceVersion, latest) || index.forceupdate === 1
       setMessage(hasUpdate ? `Latest firmware is ${latest}. Click Update to install.` : `Latest firmware is ${latest}. You are up to date.`)
     } catch (err) {
       const msg = err.message || ''
@@ -135,7 +150,7 @@ export default function FirmwarePage() {
         const minor = index.minor ?? 0
         const build = index.build ?? 0
         const latest = `${major}.${minor}.${build}`
-        const opts = [{ value: latest, label: `Latest Version ${latest}${build === currentBuild ? ' (installed)' : ''}` }]
+        const opts = [{ value: latest, label: `Latest Version ${latest}${isVersionNewerOrEqual(deviceVersion, latest) ? ' (installed)' : ''}` }]
         setSelectedVersion(latest)
         if (index.allowdowngrade === 1 && Array.isArray(index.downgradebuilds)) {
           for (const b of index.downgradebuilds) {
@@ -155,7 +170,7 @@ export default function FirmwarePage() {
         }
         setVersions(opts)
         setFirmwareInfo(index)
-        setMessage(build > currentBuild || index.forceupdate === 1 ? `Latest firmware is ${latest}. Click Update to install.` : `Latest firmware is ${latest}. You are up to date.`)
+        setMessage(!isVersionNewerOrEqual(deviceVersion, latest) || index.forceupdate === 1 ? `Latest firmware is ${latest}. Click Update to install.` : `Latest firmware is ${latest}. You are up to date.`)
       })
       .catch((err) => {
         if (cancelled) return
@@ -172,12 +187,12 @@ export default function FirmwarePage() {
     return () => { cancelled = true }
   }, [firmwareBaseUrl, currentBuild])
 
-  const selBuild = parseBuild(selectedVersion)
   const canUpdate =
     selectedVersion &&
     (firmwareInfo?.forceupdate === 1 ||
-      selBuild >= currentBuild ||
-      (selBuild < currentBuild && firmwareInfo?.allowdowngrade === 1))
+      isVersionNewerOrEqual(selectedVersion, deviceVersion) ||
+      (!isVersionNewerOrEqual(selectedVersion, deviceVersion) && firmwareInfo?.allowdowngrade === 1))
+  const currentIsLatest = selectedVersion ? isVersionNewerOrEqual(deviceVersion, selectedVersion) : false
 
   return (
     <section className="card card-full">
@@ -227,7 +242,7 @@ export default function FirmwarePage() {
               type="button"
               onClick={startUpdate}
               disabled={updateLoading || !canUpdate}
-              className={canUpdate && parseBuild(selectedVersion) > currentBuild ? '' : 'secondary'}
+              className={canUpdate && !currentIsLatest ? '' : 'secondary'}
             >
               {updateLoading ? 'Updating…' : 'Update'}
             </button>

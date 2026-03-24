@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { api } from '../api/client.js'
 import { useCapabilitiesContext } from '../contexts/CapabilitiesContext.jsx'
 import useDeviceParams from '../hooks/useDeviceParams.js'
-import { readNumber } from '../utils/paramUtils.js'
+import { readNumber, readString } from '../utils/paramUtils.js'
 
 const modes = [
   { value: 0, label: 'Off', sub: 'Fade out & switch off' },
@@ -18,7 +18,9 @@ export default function ModeControls() {
   const [loading, setLoading] = useState(false)
   const { caps } = useCapabilitiesContext()
   const { params } = useDeviceParams()
+  const deviceType = readString(params, 'devicetype', '')
   const currentMode = readNumber(params, 'ledmode', null)
+  const videoReadOnly = deviceType.toLowerCase().includes('controller')
 
   const availableModes = useMemo(() => {
     return modes.filter((mode) => {
@@ -53,12 +55,20 @@ export default function ModeControls() {
           <button
             key={mode.value}
             type="button"
-            onClick={() => setMode(mode.value)}
-            disabled={loading}
+            onClick={() => {
+              if (mode.value === 1 && videoReadOnly) return
+              setMode(mode.value)
+            }}
+            disabled={loading || (mode.value === 1 && videoReadOnly)}
             className={`mode-tile ${currentMode === mode.value ? 'active' : ''}`}
+            title={mode.value === 1 && videoReadOnly ? 'Video mode is controlled by the device and is read-only here.' : undefined}
           >
             {mode.label}
-            {mode.sub && <span className="mode-tile-label">{mode.sub}</span>}
+            {mode.sub && (
+              <span className="mode-tile-label">
+                {mode.sub}{mode.value === 1 && videoReadOnly ? ' (read-only)' : ''}
+              </span>
+            )}
           </button>
         ))}
       </div>
