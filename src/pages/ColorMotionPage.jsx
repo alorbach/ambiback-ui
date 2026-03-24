@@ -348,6 +348,8 @@ export default function ColorMotionPage() {
           <h2>Brightness</h2>
         </header>
         <div className="color-grid">
+          {brightnessPreset === 999 && (
+          <>
           <div className="form-grid">
           <label htmlFor="brightness">Brightness</label>
           <input
@@ -384,6 +386,8 @@ export default function ColorMotionPage() {
           />
           <div className="muted">{colorValueGain}</div>
           </div>
+          </>
+          )}
           <div className="form-grid">
           <label htmlFor="minimumLuminosity">Minimum Luminosity</label>
           <input
