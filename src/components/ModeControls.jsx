@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { api } from '../api/client.js'
 import { useCapabilitiesContext } from '../contexts/CapabilitiesContext.jsx'
 import useDeviceParams from '../hooks/useDeviceParams.js'
@@ -44,6 +44,12 @@ export default function ModeControls() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (!message) return
+    const t = setTimeout(() => setMessage(''), 4000)
+    return () => clearTimeout(t)
+  }, [message])
 
   return (
     <section className="card card-full">

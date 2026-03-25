@@ -3,12 +3,15 @@ import { api } from '../api/client.js'
 import StatusCard from '../components/StatusCard.jsx'
 import ParamsViewer from '../components/ParamsViewer.jsx'
 import ParamSetter from '../components/ParamSetter.jsx'
+import PersistedCollapsibleCard from '../components/PersistedCollapsibleCard.jsx'
 import useDeviceParams from '../hooks/useDeviceParams.js'
 import { readBool, readNumber, readString } from '../utils/paramUtils.js'
 import { useCapabilitiesContext } from '../contexts/CapabilitiesContext.jsx'
 import { useUiSettings } from '../contexts/UiSettingsContext.jsx'
 import { applyDefaults } from '../utils/applyDefaults.js'
 import { SYSTEM_DEFAULTS } from '../utils/paramDefaults.js'
+
+const SYSTEM_SECTION_STORAGE_KEY = 'ambiback.system.sectionOpen'
 
 export default function SystemPage() {
   const [message, setMessage] = useState('')
@@ -199,10 +202,12 @@ export default function SystemPage() {
     <div className="page">
       <h1>System & Status</h1>
       <div className="card-grid">
-        <section className="card">
-          <header className="card-header">
-            <h2>Actions</h2>
-          </header>
+        <PersistedCollapsibleCard
+          storageKey={SYSTEM_SECTION_STORAGE_KEY}
+          sectionKey="actions"
+          title="Actions"
+          defaultOpen={false}
+        >
           <div className="button-grid">
             {advanced && (
               <button type="button" onClick={() => handleAction(api.startWps)}>
@@ -217,13 +222,22 @@ export default function SystemPage() {
             </a>
           </div>
           {message && <div className="muted">{message}</div>}
-        </section>
-        <StatusCard />
+        </PersistedCollapsibleCard>
+        <PersistedCollapsibleCard
+          storageKey={SYSTEM_SECTION_STORAGE_KEY}
+          sectionKey="status"
+          title="Status"
+          defaultOpen={true}
+        >
+          <StatusCard />
+        </PersistedCollapsibleCard>
       </div>
-      <section className="card">
-        <header className="card-header">
-          <h2>Device Info</h2>
-        </header>
+      <PersistedCollapsibleCard
+        storageKey={SYSTEM_SECTION_STORAGE_KEY}
+        sectionKey="info"
+        title="Device Info"
+        defaultOpen={true}
+      >
         {params ? (
           <dl className="status-grid">
             <div className="status-row">
@@ -250,11 +264,13 @@ export default function SystemPage() {
         ) : (
           <div className="muted">No device info yet.</div>
         )}
-      </section>
-      <section className="card">
-        <header className="card-header">
-          <h2>Device Settings</h2>
-        </header>
+      </PersistedCollapsibleCard>
+      <PersistedCollapsibleCard
+        storageKey={SYSTEM_SECTION_STORAGE_KEY}
+        sectionKey="settings"
+        title="Device Settings"
+        defaultOpen={true}
+      >
         <div className="form-grid">
           <label htmlFor="deviceName">Device Name</label>
           <input
@@ -323,12 +339,14 @@ export default function SystemPage() {
           </button>
         </div>
         {settingsMessage && <div className="muted">{settingsMessage}</div>}
-      </section>
+      </PersistedCollapsibleCard>
       {advanced && (
-        <section className="card">
-          <header className="card-header">
-            <h2>Debug Settings</h2>
-          </header>
+        <PersistedCollapsibleCard
+          storageKey={SYSTEM_SECTION_STORAGE_KEY}
+          sectionKey="debug"
+          title="Debug Settings"
+          defaultOpen={false}
+        >
           <div className="form-grid">
             <label htmlFor="debugSyslogServer">Syslog Server</label>
             <input
@@ -390,13 +408,15 @@ export default function SystemPage() {
             </label>
           </div>
           {settingsMessage && <div className="muted">{settingsMessage}</div>}
-        </section>
+        </PersistedCollapsibleCard>
       )}
       {advanced && caps.wifiAp && (
-        <section className="card">
-          <header className="card-header">
-            <h2>WiFi Direct AP</h2>
-          </header>
+        <PersistedCollapsibleCard
+          storageKey={SYSTEM_SECTION_STORAGE_KEY}
+          sectionKey="wifiAp"
+          title="WiFi Direct AP"
+          defaultOpen={false}
+        >
           <div className="form-grid">
             <label className="checkbox">
               <input
@@ -416,13 +436,15 @@ export default function SystemPage() {
             <input type="text" value={readString(params, 'deviceappass', '')} disabled />
           </div>
           {settingsMessage && <div className="muted">{settingsMessage}</div>}
-        </section>
+        </PersistedCollapsibleCard>
       )}
       {caps.relay && (
-        <section className="card">
-          <header className="card-header">
-            <h2>Relay Settings</h2>
-          </header>
+        <PersistedCollapsibleCard
+          storageKey={SYSTEM_SECTION_STORAGE_KEY}
+          sectionKey="relay"
+          title="Relay Settings"
+          defaultOpen={false}
+        >
           <div className="form-grid">
             <label htmlFor="relayTarget">Relay Target</label>
             <input
@@ -474,10 +496,28 @@ export default function SystemPage() {
             </select>
           </div>
           {settingsMessage && <div className="muted">{settingsMessage}</div>}
-        </section>
+        </PersistedCollapsibleCard>
       )}
-      {advanced && <ParamSetter options={paramOptions} />}
-      {advanced && <ParamsViewer />}
+      {advanced && (
+        <PersistedCollapsibleCard
+          storageKey={SYSTEM_SECTION_STORAGE_KEY}
+          sectionKey="paramSetter"
+          title="Parameter Setter"
+          defaultOpen={false}
+        >
+          <ParamSetter options={paramOptions} />
+        </PersistedCollapsibleCard>
+      )}
+      {advanced && (
+        <PersistedCollapsibleCard
+          storageKey={SYSTEM_SECTION_STORAGE_KEY}
+          sectionKey="paramsViewer"
+          title="Raw Parameters"
+          defaultOpen={false}
+        >
+          <ParamsViewer />
+        </PersistedCollapsibleCard>
+      )}
     </div>
   )
 }

@@ -27,8 +27,14 @@ export default function Layout({ children }) {
   )
 
   useEffect(() => {
+    // Hysteresis prevents flickering near the threshold:
+    // enter compact at >40px scroll, exit compact only below 10px.
     const updateModePanelState = () => {
-      setModePanelCompact(window.scrollY > 24)
+      setModePanelCompact((prev) => {
+        if (!prev && window.scrollY > 40) return true
+        if (prev && window.scrollY < 10) return false
+        return prev
+      })
     }
 
     updateModePanelState()

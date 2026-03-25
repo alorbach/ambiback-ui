@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import ColorControls from '../components/ColorControls.jsx'
 import ParamSetter from '../components/ParamSetter.jsx'
+import PersistedCollapsibleCard from '../components/PersistedCollapsibleCard.jsx'
 import useDeviceParams from '../hooks/useDeviceParams.js'
 import { api } from '../api/client.js'
 import { readNumber } from '../utils/paramUtils.js'
 import { useUiSettings } from '../contexts/UiSettingsContext.jsx'
 import { applyDefaults } from '../utils/applyDefaults.js'
 import { COLOR_MOTION_DEFAULTS } from '../utils/paramDefaults.js'
+
+const COLOR_MOTION_SECTION_STORAGE_KEY = 'ambiback.colormotion.sectionOpen'
 
 export default function ColorMotionPage() {
   const { params, refresh } = useDeviceParams()
@@ -91,13 +94,20 @@ export default function ColorMotionPage() {
   return (
     <div className="page">
       <h1>Color & Motion</h1>
-      <div className="card-grid">
+      <PersistedCollapsibleCard
+        storageKey={COLOR_MOTION_SECTION_STORAGE_KEY}
+        sectionKey="manualColor"
+        title="Manual Color"
+        defaultOpen={true}
+      >
         <ColorControls />
-      </div>
-      <section className="card">
-        <header className="card-header">
-          <h2>Presets</h2>
-        </header>
+      </PersistedCollapsibleCard>
+      <PersistedCollapsibleCard
+        storageKey={COLOR_MOTION_SECTION_STORAGE_KEY}
+        sectionKey="presets"
+        title="Presets"
+        defaultOpen={true}
+      >
         <div className="form-grid">
           <label htmlFor="colorPreset">Color Preset</label>
           <select
@@ -151,11 +161,13 @@ export default function ColorMotionPage() {
             <option value={999}>Custom</option>
           </select>
         </div>
-      </section>
-      <section className="card">
-        <header className="card-header">
-          <h2>Color Calibration</h2>
-        </header>
+      </PersistedCollapsibleCard>
+      <PersistedCollapsibleCard
+        storageKey={COLOR_MOTION_SECTION_STORAGE_KEY}
+        sectionKey="calibration"
+        title="Color Calibration"
+        defaultOpen={false}
+      >
         <div className="color-grid">
           <div className="form-grid">
           <label htmlFor="colorRed">Red</label>
@@ -209,11 +221,13 @@ export default function ColorMotionPage() {
           <div className="muted">{colorBlue}</div>
           </div>
         </div>
-      </section>
-      <section className="card">
-        <header className="card-header">
-          <h2>Color Boost</h2>
-        </header>
+      </PersistedCollapsibleCard>
+      <PersistedCollapsibleCard
+        storageKey={COLOR_MOTION_SECTION_STORAGE_KEY}
+        sectionKey="boost"
+        title="Color Boost"
+        defaultOpen={false}
+      >
         <div className="color-grid">
           <div className="form-grid">
           <label htmlFor="colorBoost">Color Boost</label>
@@ -342,11 +356,13 @@ export default function ColorMotionPage() {
           <div className="muted">{colorBoostBlue}</div>
           </div>
         </div>
-      </section>
-      <section className="card">
-        <header className="card-header">
-          <h2>Brightness</h2>
-        </header>
+      </PersistedCollapsibleCard>
+      <PersistedCollapsibleCard
+        storageKey={COLOR_MOTION_SECTION_STORAGE_KEY}
+        sectionKey="brightness"
+        title="Brightness"
+        defaultOpen={false}
+      >
         <div className="color-grid">
           {brightnessPreset === 999 && (
           <>
@@ -407,11 +423,13 @@ export default function ColorMotionPage() {
           <div className="muted">{minimumLuminosity}</div>
           </div>
         </div>
-      </section>
-      <section className="card">
-        <header className="card-header">
-          <h2>Motion</h2>
-        </header>
+      </PersistedCollapsibleCard>
+      <PersistedCollapsibleCard
+        storageKey={COLOR_MOTION_SECTION_STORAGE_KEY}
+        sectionKey="motion"
+        title="Motion"
+        defaultOpen={false}
+      >
         <div className="color-grid">
           <div className="form-grid">
           <label htmlFor="frameSmoothing">Frame Smoothing</label>
@@ -490,7 +508,7 @@ export default function ColorMotionPage() {
             {resetting ? 'Resetting…' : 'Reset to default'}
           </button>
         </div>
-      </section>
+      </PersistedCollapsibleCard>
       {message && <div className="muted">{message}</div>}
       {advanced && <ParamSetter />}
     </div>

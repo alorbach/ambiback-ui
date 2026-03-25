@@ -29,7 +29,6 @@ function isVersionNewerOrEqual(leftVersion, rightVersion) {
 export default function FirmwarePage() {
   const { params } = useDeviceParams()
   const [firmwareInfo, setFirmwareInfo] = useState(null)
-  const [loading, setLoading] = useState(false)
   const [checkLoading, setCheckLoading] = useState(false)
   const [updateLoading, setUpdateLoading] = useState(false)
   const [message, setMessage] = useState('')
@@ -185,7 +184,7 @@ export default function FirmwarePage() {
         if (!cancelled) setCheckLoading(false)
       })
     return () => { cancelled = true }
-  }, [firmwareBaseUrl, currentBuild])
+  }, [firmwareBaseUrl, deviceVersion])
 
   const canUpdate =
     selectedVersion &&
@@ -195,85 +194,87 @@ export default function FirmwarePage() {
   const currentIsLatest = selectedVersion ? isVersionNewerOrEqual(deviceVersion, selectedVersion) : false
 
   return (
-    <section className="card card-full">
-      <header className="card-header">
-        <h1>Firmware Update</h1>
-      </header>
+    <div className="page firmware-page">
+      <section className="card card-full">
+        <header className="card-header">
+          <h1>Firmware Update</h1>
+        </header>
 
-      <div className="card-body">
-        <p className="muted">Current version: {deviceVersion || '—'}</p>
-        {params && !firmwareBaseUrl && (
-          <p className="muted" style={{ color: 'var(--pico-del-color)' }}>
-            Automatic update requires device firmware 0.5.xxx or newer (with firmwarebaseurl). Use Manual Update below to flash first.
-          </p>
-        )}
+        <div className="card-body">
+          <p className="muted">Current version: {deviceVersion || '—'}</p>
+          {params && !firmwareBaseUrl && (
+            <p className="muted" style={{ color: 'var(--pico-del-color)' }}>
+              Automatic update requires device firmware 0.5.xxx or newer (with firmwarebaseurl). Use Manual Update below to flash first.
+            </p>
+          )}
 
-        <div className="form-grid" style={{ maxWidth: 400 }}>
-          <div>
-            <h3>Automatic Update</h3>
-            <p className="muted">Check for new firmware and install via OTA.</p>
+          <div className="form-grid firmware-update-grid">
+            <div style={{ gridColumn: '1 / -1' }}>
+              <h3>Automatic Update</h3>
+              <p className="muted">Check for new firmware and install via OTA.</p>
+            </div>
+
+            <label htmlFor="firmware_version">Firmware Version</label>
+            <select
+              id="firmware_version"
+              value={selectedVersion}
+              onChange={(e) => setSelectedVersion(e.target.value)}
+              disabled={versions.length === 0}
+            >
+              <option value="">— Select —</option>
+              {versions.map((v) => (
+                <option key={v.value} value={v.value}>
+                  {v.label}
+                </option>
+              ))}
+            </select>
+
+            <div className="firmware-update-actions">
+              <button
+                type="button"
+                onClick={checkForUpdate}
+                disabled={checkLoading || !params}
+                className="secondary"
+              >
+                {checkLoading ? 'Checking…' : 'Check for Update'}
+              </button>
+              <button
+                type="button"
+                onClick={startUpdate}
+                disabled={updateLoading || !canUpdate}
+                className={canUpdate && !currentIsLatest ? '' : 'secondary'}
+              >
+                {updateLoading ? 'Updating…' : 'Update'}
+              </button>
+            </div>
           </div>
 
-          <label htmlFor="firmware_version">Firmware Version</label>
-          <select
-            id="firmware_version"
-            value={selectedVersion}
-            onChange={(e) => setSelectedVersion(e.target.value)}
-            disabled={versions.length === 0}
-          >
-            <option value="">— Select —</option>
-            {versions.map((v) => (
-              <option key={v.value} value={v.value}>
-                {v.label}
-              </option>
-            ))}
-          </select>
+          {message && (
+            <div
+              className="muted"
+              style={{ marginTop: 16, color: message.includes('Failed') || message.includes('error') ? 'var(--pico-del-color)' : undefined }}
+            >
+              {message}
+            </div>
+          )}
 
-          <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              onClick={checkForUpdate}
-              disabled={checkLoading || !params}
-              className="secondary"
-            >
-              {checkLoading ? 'Checking…' : 'Check for Update'}
-            </button>
-            <button
-              type="button"
-              onClick={startUpdate}
-              disabled={updateLoading || !canUpdate}
-              className={canUpdate && !currentIsLatest ? '' : 'secondary'}
-            >
-              {updateLoading ? 'Updating…' : 'Update'}
-            </button>
-          </div>
+          {updateLoading && updateProgress?.status === 1 && (
+            <div className="muted" style={{ marginTop: 8 }}>
+              Downloading firmware… Please wait. Do not power off the device.
+            </div>
+          )}
         </div>
 
-        {message && (
-          <div
-            className="muted"
-            style={{ marginTop: 16, color: message.includes('Failed') || message.includes('error') ? 'var(--pico-del-color)' : undefined }}
-          >
-            {message}
-          </div>
-        )}
-
-        {updateLoading && updateProgress?.status === 1 && (
-          <div className="muted" style={{ marginTop: 8 }}>
-            Downloading firmware… Please wait. Do not power off the device.
-          </div>
-        )}
-      </div>
-
-      <div className="card-body">
-        <h3>Manual Update</h3>
-        <p className="muted">
-          Upload a firmware file directly to the device.{' '}
-          <a href={api.updateUrl()} target="_blank" rel="noopener noreferrer">
-            Open OTA Update page
-          </a>
-        </p>
-      </div>
-    </section>
+        <div className="card-body">
+          <h3>Manual Update</h3>
+          <p className="muted">
+            Upload a firmware file directly to the device.{' '}
+            <a href={api.updateUrl()} target="_blank" rel="noopener noreferrer">
+              Open OTA Update page
+            </a>
+          </p>
+        </div>
+      </section>
+    </div>
   )
 }

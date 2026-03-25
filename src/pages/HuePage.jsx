@@ -303,12 +303,12 @@ export default function HuePage() {
             <button type="button" onClick={discoverBridges}>
               Discover
             </button>
-            <button type="button" onClick={handleConnect} disabled={connecting || !bridgeIp}>
-              Connect
-            </button>
-            <button type="button" onClick={handleDisconnect} disabled={!bridgeConnected}>
-              Disconnect
-            </button>
+          <button type="button" onClick={handleConnect} disabled={connecting || !bridgeIp}>
+            Connect
+          </button>
+          <button type="button" onClick={handleDisconnect} disabled={!bridgeConnected}>
+            Disconnect
+          </button>
           </div>
         </header>
         <div className="layout-grid">
@@ -441,9 +441,7 @@ export default function HuePage() {
             {resetting ? 'Resetting…' : 'Reset to default'}
           </button>
         </div>
-        <div className="muted">
-          Press the Hue bridge link button before connecting.
-        </div>
+        <div className="muted">Press the Hue bridge link button before connecting.</div>
         {advanced && (
           <div className="layout-grid">
             <div className="layout-field">
@@ -496,10 +494,7 @@ export default function HuePage() {
                       <span>{light.productname || 'Hue Light'}</span>
                       <span className="muted">{light.name}</span>
                     </div>
-                    <label
-                      className="checkbox hue-light-toggle"
-                      onClick={(event) => event.stopPropagation()}
-                    >
+                    <label className="checkbox hue-light-toggle" onClick={(event) => event.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={settings?.enabled || false}
@@ -525,136 +520,136 @@ export default function HuePage() {
                     <div className="hue-section-title">Sector settings</div>
                     <div className="layout-field">
                       <label>Zone Mapping (Backside)</label>
-                    <div className="hue-tv">
-                      <div className="hue-tv-frame">
-                        <div className="hue-tv-screen" />
-                        <div className="hue-tv-zone-row hue-tv-zone-row-top">
-                          {topZones.map((zone) => {
-                            const active = zones[zone]
-                            return (
-                              <button
-                                key={`hue-zone-top-${zone}`}
-                                type="button"
-                                className={`hue-tv-zone ${active ? 'active' : ''}`}
-                                onClick={() => {
-                                  const next = !active
-                                  setLightSettings((prev) => ({
-                                    ...prev,
-                                    [light.uniqueid]: {
-                                      ...prev[light.uniqueid],
-                                      zones: zones.map((value, zoneIndex) =>
-                                        zoneIndex === zone ? next : value,
-                                      ),
-                                    },
-                                  }))
-                                  queueLightParam(
-                                    `hue-light-zone-${light.uniqueid}-${zone}`,
-                                    'sethuelightzone',
-                                    light.uniqueid,
-                                    next ? 1 : 0,
-                                    zone,
-                                  )
-                                }}
-                                aria-pressed={active}
-                              disabled={lightControlsDisabled}
-                              >
-                                {zone + 1}
-                              </button>
-                            )
-                          })}
-                        </div>
-                        <button
-                          type="button"
-                          className={`hue-tv-zone hue-tv-zone-left ${zones[5] ? 'active' : ''}`}
-                          onClick={() => {
-                            const next = !zones[5]
-                            setLightSettings((prev) => ({
-                              ...prev,
-                              [light.uniqueid]: {
-                                ...prev[light.uniqueid],
-                                zones: zones.map((value, zoneIndex) =>
-                                  zoneIndex === 5 ? next : value,
-                                ),
-                              },
-                            }))
-                            queueLightParam(
-                              `hue-light-zone-${light.uniqueid}-5`,
-                              'sethuelightzone',
-                              light.uniqueid,
-                              next ? 1 : 0,
-                              5,
-                            )
-                          }}
-                          aria-pressed={zones[5]}
-                          disabled={lightControlsDisabled}
-                        >
-                          6
-                        </button>
-                        <button
-                          type="button"
-                          className={`hue-tv-zone hue-tv-zone-right ${zones[6] ? 'active' : ''}`}
-                          onClick={() => {
-                            const next = !zones[6]
-                            setLightSettings((prev) => ({
-                              ...prev,
-                              [light.uniqueid]: {
-                                ...prev[light.uniqueid],
-                                zones: zones.map((value, zoneIndex) =>
-                                  zoneIndex === 6 ? next : value,
-                                ),
-                              },
-                            }))
-                            queueLightParam(
-                              `hue-light-zone-${light.uniqueid}-6`,
-                              'sethuelightzone',
-                              light.uniqueid,
-                              next ? 1 : 0,
-                              6,
-                            )
-                          }}
-                          aria-pressed={zones[6]}
-                          disabled={lightControlsDisabled}
-                        >
-                          7
-                        </button>
-                        <div className="hue-tv-zone-row hue-tv-zone-row-bottom">
-                          {bottomZones.map((zone) => {
-                            const active = zones[zone]
-                            return (
-                              <button
-                                key={`hue-zone-bottom-${zone}`}
-                                type="button"
-                                className={`hue-tv-zone ${active ? 'active' : ''}`}
-                                onClick={() => {
-                                  const next = !active
-                                  setLightSettings((prev) => ({
-                                    ...prev,
-                                    [light.uniqueid]: {
-                                      ...prev[light.uniqueid],
-                                      zones: zones.map((value, zoneIndex) =>
-                                        zoneIndex === zone ? next : value,
-                                      ),
-                                    },
-                                  }))
-                                  queueLightParam(
-                                    `hue-light-zone-${light.uniqueid}-${zone}`,
-                                    'sethuelightzone',
-                                    light.uniqueid,
-                                    next ? 1 : 0,
-                                    zone,
-                                  )
-                                }}
-                                aria-pressed={active}
-                              disabled={lightControlsDisabled}
-                              >
-                                {zone + 1}
-                              </button>
-                            )
-                          })}
+                      <div className="hue-tv">
+                        <div className="hue-tv-frame">
+                          <div className="hue-tv-screen" />
+                          <div className="hue-tv-zone-row hue-tv-zone-row-top">
+                            {topZones.map((zone) => {
+                              const active = zones[zone]
+                              return (
+                                <button
+                                  key={`hue-zone-top-${zone}`}
+                                  type="button"
+                                  className={`hue-tv-zone ${active ? 'active' : ''}`}
+                                  onClick={() => {
+                                    const next = !active
+                                    setLightSettings((prev) => ({
+                                      ...prev,
+                                      [light.uniqueid]: {
+                                        ...prev[light.uniqueid],
+                                        zones: zones.map((value, zoneIndex) =>
+                                          zoneIndex === zone ? next : value,
+                                        ),
+                                      },
+                                    }))
+                                    queueLightParam(
+                                      `hue-light-zone-${light.uniqueid}-${zone}`,
+                                      'sethuelightzone',
+                                      light.uniqueid,
+                                      next ? 1 : 0,
+                                      zone,
+                                    )
+                                  }}
+                                  aria-pressed={active}
+                                  disabled={lightControlsDisabled}
+                                >
+                                  {zone + 1}
+                                </button>
+                              )
+                            })}
+                          </div>
+                          <button
+                            type="button"
+                            className={`hue-tv-zone hue-tv-zone-left ${zones[5] ? 'active' : ''}`}
+                            onClick={() => {
+                              const next = !zones[5]
+                              setLightSettings((prev) => ({
+                                ...prev,
+                                [light.uniqueid]: {
+                                  ...prev[light.uniqueid],
+                                  zones: zones.map((value, zoneIndex) =>
+                                    zoneIndex === 5 ? next : value,
+                                  ),
+                                },
+                              }))
+                              queueLightParam(
+                                `hue-light-zone-${light.uniqueid}-5`,
+                                'sethuelightzone',
+                                light.uniqueid,
+                                next ? 1 : 0,
+                                5,
+                              )
+                            }}
+                            aria-pressed={zones[5]}
+                            disabled={lightControlsDisabled}
+                          >
+                            6
+                          </button>
+                          <button
+                            type="button"
+                            className={`hue-tv-zone hue-tv-zone-right ${zones[6] ? 'active' : ''}`}
+                            onClick={() => {
+                              const next = !zones[6]
+                              setLightSettings((prev) => ({
+                                ...prev,
+                                [light.uniqueid]: {
+                                  ...prev[light.uniqueid],
+                                  zones: zones.map((value, zoneIndex) =>
+                                    zoneIndex === 6 ? next : value,
+                                  ),
+                                },
+                              }))
+                              queueLightParam(
+                                `hue-light-zone-${light.uniqueid}-6`,
+                                'sethuelightzone',
+                                light.uniqueid,
+                                next ? 1 : 0,
+                                6,
+                              )
+                            }}
+                            aria-pressed={zones[6]}
+                            disabled={lightControlsDisabled}
+                          >
+                            7
+                          </button>
+                          <div className="hue-tv-zone-row hue-tv-zone-row-bottom">
+                            {bottomZones.map((zone) => {
+                              const active = zones[zone]
+                              return (
+                                <button
+                                  key={`hue-zone-bottom-${zone}`}
+                                  type="button"
+                                  className={`hue-tv-zone ${active ? 'active' : ''}`}
+                                  onClick={() => {
+                                    const next = !active
+                                    setLightSettings((prev) => ({
+                                      ...prev,
+                                      [light.uniqueid]: {
+                                        ...prev[light.uniqueid],
+                                        zones: zones.map((value, zoneIndex) =>
+                                          zoneIndex === zone ? next : value,
+                                        ),
+                                      },
+                                    }))
+                                    queueLightParam(
+                                      `hue-light-zone-${light.uniqueid}-${zone}`,
+                                      'sethuelightzone',
+                                      light.uniqueid,
+                                      next ? 1 : 0,
+                                      zone,
+                                    )
+                                  }}
+                                  aria-pressed={active}
+                                  disabled={lightControlsDisabled}
+                                >
+                                  {zone + 1}
+                                </button>
+                              )
+                            })}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
                     <div className="hue-section-title">Color correction</div>
                     <div className="layout-grid hue-color-grid">
                       <div className="layout-field">

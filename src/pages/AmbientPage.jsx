@@ -22,10 +22,10 @@ const SCENE_PRESETS = [
 ]
 
 const HEALTH_PRESETS = [
-  { value: 12, label: '40 Hz Gamma', preview: ['#000011', '#0000ff'], tooltip: 'MIT GENUS: 40 Hz blue flicker. Research suggests gamma entrainment may support brain health. Intensity: Blue→Black (1=full, 100=off).' },
-  { value: 13, label: '10 Hz Alpha', preview: ['#110000', '#880000', '#ff0000', '#880000'], tooltip: '10 Hz red pulse with soft ramping. Alpha wave entrainment may support relaxation & focus. Intensity: Red→Black.' },
-  { value: 14, label: '34 Hz Gamma (Red)', preview: ['#110000', '#ff0000'], tooltip: '34 Hz red flicker. Study: red light 34–38 Hz can entrain gamma waves. Intensity: Red→Black (1=full, 100=off).' },
-  { value: 15, label: 'Rotlicht Abend', preview: ['#550000', '#aa0000', '#ff0000', '#aa0000'], tooltip: 'Red breathing light. Red is melatonin-friendly for evening; gentle pulse may support sleep. Speed 5=1 Hz. Intensity: Red→Black.' },
+  { value: 12, label: '40 Hz Gamma', preview: ['#000011', '#0000ff'], tooltip: '40 Hz blue pulse. Intensity sets the minimum level: 1 keeps the blue near full brightness, 100 reaches black. Peak stays aligned with global brightness.' },
+  { value: 13, label: '10 Hz Alpha', preview: ['#110000', '#880000', '#ff0000', '#880000'], tooltip: '10 Hz red pulse with soft ramping. Intensity sets the minimum level: 1 keeps the pulse near full brightness, 100 reaches black. Peak stays aligned with global brightness.' },
+  { value: 14, label: '34 Hz Gamma (Red)', preview: ['#110000', '#ff0000'], tooltip: '34 Hz red pulse. Intensity sets the minimum level: 1 keeps the red near full brightness, 100 reaches black. Peak stays aligned with global brightness.' },
+  { value: 15, label: 'Rotlicht Abend', preview: ['#550000', '#aa0000', '#ff0000', '#aa0000'], tooltip: 'Red breathing light. Intensity sets the minimum level: 1 keeps the pulse near full brightness, 100 reaches black. Speed still controls the breathing rate.' },
 ]
 
 const AMBIENT_SECTION_STORAGE_KEY = 'ambiback.ambient.sectionOpen'
@@ -113,7 +113,6 @@ export default function AmbientPage() {
         </header>
         <p className="card-desc">Main LED brightness for ambient output.</p>
         <div className="form-grid form-grid-ambient">
-          <label htmlFor="ambientBrightness">Brightness</label>
           <div className="range-with-input">
             <input
               type="range"

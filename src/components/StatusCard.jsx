@@ -45,13 +45,12 @@ export default function StatusCard() {
   }, [status])
 
   return (
-    <section className="card">
-      <header className="card-header">
-        <h2>Status</h2>
+    <>
+      <div style={{ marginBottom: 8 }}>
         <button type="button" onClick={refresh} disabled={loading}>
           {loading ? 'Loading...' : 'Refresh'}
         </button>
-      </header>
+      </div>
       {error && <div className="error">{error}</div>}
       {status ? (
         <>
@@ -71,6 +70,6 @@ export default function StatusCard() {
       ) : (
         <div className="muted">No data yet.</div>
       )}
-    </section>
+    </>
   )
 }
