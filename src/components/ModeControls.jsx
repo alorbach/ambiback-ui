@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { api } from '../api/client.js'
 import { useCapabilitiesContext } from '../contexts/CapabilitiesContext.jsx'
 import useDeviceParams from '../hooks/useDeviceParams.js'
@@ -17,7 +17,8 @@ export default function ModeControls() {
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
   const { caps } = useCapabilitiesContext()
-  const { params } = useDeviceParams()
+  const { params, refresh } = useDeviceParams()
+  const refreshTimerRef = useRef(null)
   const deviceType = readString(params, 'devicetype', '')
   const currentMode = readNumber(params, 'ledmode', null)
   const videoReadOnly = deviceType.toLowerCase().includes('controller')
@@ -35,6 +36,7 @@ export default function ModeControls() {
   const setMode = async (mode) => {
     setLoading(true)
     setMessage('')
+    if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current)
     try {
       const result = await api.setColorMode(mode)
       setMessage(result)
@@ -43,7 +45,12 @@ export default function ModeControls() {
     } finally {
       setLoading(false)
     }
+    refreshTimerRef.current = setTimeout(() => refresh(), 1000)
   }
+
+  useEffect(() => {
+    return () => { if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current) }
+  }, [])
 
   useEffect(() => {
     if (!message) return
