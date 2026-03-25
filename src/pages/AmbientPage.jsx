@@ -34,7 +34,6 @@ const defaultSectionOpen = {
   manualColor: false,
   healthScenes: false,
   ambientScenes: true,
-  fineTuning: false,
 }
 
 function readInitialSectionOpen() {
@@ -47,7 +46,6 @@ function readInitialSectionOpen() {
       manualColor: typeof parsed.manualColor === 'boolean' ? parsed.manualColor : defaultSectionOpen.manualColor,
       healthScenes: typeof parsed.healthScenes === 'boolean' ? parsed.healthScenes : defaultSectionOpen.healthScenes,
       ambientScenes: typeof parsed.ambientScenes === 'boolean' ? parsed.ambientScenes : defaultSectionOpen.ambientScenes,
-      fineTuning: typeof parsed.fineTuning === 'boolean' ? parsed.fineTuning : defaultSectionOpen.fineTuning,
     }
   } catch {
     return defaultSectionOpen
@@ -60,6 +58,7 @@ export default function AmbientPage() {
   const [ambientPreset, setAmbientPreset] = useState(0)
   const [ambientSpeed, setAmbientSpeed] = useState(5)
   const [ambientIntensity, setAmbientIntensity] = useState(80)
+  const [ambientHealthIntensity, setAmbientHealthIntensity] = useState(80)
   const [message, setMessage] = useState('')
   const [resetting, setResetting] = useState(false)
   const [infoOpen, setInfoOpen] = useState(null)
@@ -72,6 +71,7 @@ export default function AmbientPage() {
     setAmbientPreset(readNumber(params, 'ambientpreset', 0))
     setAmbientSpeed(readNumber(params, 'ambientspeed', 5))
     setAmbientIntensity(readNumber(params, 'ambientintensity', 80))
+    setAmbientHealthIntensity(readNumber(params, 'ambienthealthintensity', 80))
   }, [params])
 
   useEffect(() => {
@@ -232,6 +232,40 @@ export default function AmbientPage() {
               </div>
             ))}
           </div>
+          <div className="form-grid form-grid-ambient" style={{ marginTop: '12px' }}>
+            <label htmlFor="ambientHealthIntensity">Health Pulse Floor (1–100)</label>
+            <p style={{ fontSize: '0.8em', margin: '0 0 4px', opacity: 0.7 }}>Controls how dark health presets (12–15) dip — lower = brighter floor, higher = reaches black</p>
+            <div className="range-with-input">
+              <input
+                type="range"
+                id="ambientHealthIntensity"
+                min={1}
+                max={100}
+                value={ambientHealthIntensity}
+                onChange={(e) => {
+                  const next = Number(e.target.value)
+                  setAmbientHealthIntensity(next)
+                  queueParam('setambienthealthintensity', next)
+                }}
+                aria-valuemin={1}
+                aria-valuemax={100}
+                aria-valuenow={ambientHealthIntensity}
+              />
+              <input
+                type="number"
+                min={1}
+                max={100}
+                value={ambientHealthIntensity}
+                onChange={(e) => {
+                  const next = Math.max(1, Math.min(100, Number(e.target.value) || 1))
+                  setAmbientHealthIntensity(next)
+                  queueParam('setambienthealthintensity', next)
+                }}
+                className="range-number-input"
+                aria-label="Health Intensity value"
+              />
+            </div>
+          </div>
         </div>
       </details>
 
@@ -281,23 +315,7 @@ export default function AmbientPage() {
               </button>
             ))}
           </div>
-        </div>
-      </details>
-
-      <details
-        className="card card-collapsible"
-        open={sectionOpen.fineTuning}
-        onToggle={(event) => {
-          const isOpen = Boolean(event.target?.open)
-          setSectionOpen((prev) => ({ ...prev, fineTuning: isOpen }))
-        }}
-      >
-        <summary className="card-collapsible-summary">
-          <span className="card-collapsible-chevron" aria-hidden>▶</span>
-          Fine Tuning
-        </summary>
-        <div className="card-collapsible-body">
-          <div className="form-grid form-grid-ambient">
+          <div className="form-grid form-grid-ambient" style={{ marginTop: '12px' }}>
             <label htmlFor="ambientSpeed">Speed (1–10)</label>
             <div className="range-with-input">
               <input
@@ -361,31 +379,31 @@ export default function AmbientPage() {
               />
             </div>
           </div>
-          <div className="button-row">
-            <button
-              type="button"
-              className="button secondary"
-              disabled={resetting}
-              onClick={async () => {
-                setResetting(true)
-                setMessage('')
-                try {
-                  await applyDefaults(AMBIENT_DEFAULTS)
-                  await refresh()
-                  setMessage('Ambient settings reset to defaults')
-                } catch (err) {
-                  setMessage(err.message || 'Failed to reset')
-                } finally {
-                  setResetting(false)
-                }
-              }}
-            >
-              {resetting ? 'Resetting…' : 'Reset to default'}
-            </button>
-          </div>
-          {message && <p className="form-message">{message}</p>}
         </div>
       </details>
+      <div className="button-row" style={{ marginTop: '8px' }}>
+        <button
+          type="button"
+          className="button secondary"
+          disabled={resetting}
+          onClick={async () => {
+            setResetting(true)
+            setMessage('')
+            try {
+              await applyDefaults(AMBIENT_DEFAULTS)
+              await refresh()
+              setMessage('Ambient settings reset to defaults')
+            } catch (err) {
+              setMessage(err.message || 'Failed to reset')
+            } finally {
+              setResetting(false)
+            }
+          }}
+        >
+          {resetting ? 'Resetting…' : 'Reset to default'}
+        </button>
+      </div>
+      {message && <p className="form-message">{message}</p>}
     </div>
   )
 }

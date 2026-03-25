@@ -61,6 +61,7 @@ export const AMBIENT_DEFAULTS = [
   { param: 'setambientpreset', value: 0 },
   { param: 'setambientspeed', value: 5 },
   { param: 'setambientintensity', value: 80 },
+  { param: 'setambienthealthintensity', value: 80 },
 ]
 
 export const CAMERA_DEFAULTS = [
