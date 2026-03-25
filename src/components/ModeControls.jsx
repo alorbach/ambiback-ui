@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client.js'
 import { useCapabilitiesContext } from '../contexts/CapabilitiesContext.jsx'
 import useDeviceParams from '../hooks/useDeviceParams.js'
@@ -7,8 +8,8 @@ import { readNumber, readString } from '../utils/paramUtils.js'
 const modes = [
   { value: 0, label: 'Off', sub: 'Fade out & switch off' },
   { value: 1, label: 'Video', sub: 'Network / sync' },
-  { value: 2, label: 'Ambient', sub: 'Static or scenes' },
-  { value: 3, label: 'Camera', sub: 'Screen capture' },
+  { value: 2, label: 'Ambient', sub: 'Static or scenes', navigateTo: '/ambient' },
+  { value: 3, label: 'Camera', sub: 'Screen capture', navigateTo: '/camera' },
   { value: 4, label: 'Relay', sub: 'Forward to device' },
   { value: 5, label: 'Demo', sub: 'Test pattern' },
 ]
@@ -18,6 +19,7 @@ export default function ModeControls() {
   const [loading, setLoading] = useState(false)
   const { caps } = useCapabilitiesContext()
   const { params, refresh } = useDeviceParams()
+  const navigate = useNavigate()
   const refreshTimerRef = useRef(null)
   const deviceType = readString(params, 'devicetype', '')
   const currentMode = readNumber(params, 'ledmode', null)
@@ -40,6 +42,8 @@ export default function ModeControls() {
     try {
       const result = await api.setColorMode(mode)
       setMessage(result)
+      const modeObj = modes.find((m) => m.value === mode)
+      if (modeObj?.navigateTo) navigate(modeObj.navigateTo)
     } catch (err) {
       setMessage(err.message || 'Failed to set mode')
     } finally {
