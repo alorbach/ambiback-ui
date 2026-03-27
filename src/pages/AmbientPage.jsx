@@ -17,8 +17,8 @@ const SCENE_PRESETS = [
   { value: 7, label: 'Candle', preview: ['#442200', '#cc7722', '#ffaa44', '#cc8822'] },
   { value: 8, label: 'Rainbow', preview: ['#ff0000', '#ff8800', '#ffff00', '#00ff00', '#0088ff', '#8800ff'] },
   { value: 9, label: 'Thunderstorm', preview: ['#0a0a18', '#1a2540', '#4080cc', '#0a0a18'] },
-  { value: 10, label: 'Party 2', preview: ['#ff0088', '#00ff88', '#0088ff', '#ff8800'] },
-  { value: 11, label: 'Party', preview: ['#ff0066', '#6600ff', '#00ffcc', '#ffcc00'] },
+  { value: 10, label: 'Prism Drift', preview: ['#6ee7ff', '#7c3aed', '#22c55e', '#f59e0b'], tooltip: 'Smooth layered gradients with subtle sparkle and cinematic motion.' },
+  { value: 11, label: 'Neon Surge', preview: ['#ff0066', '#00e5ff', '#7c00ff', '#facc15'], tooltip: 'High-energy segmented chase with flashes and neon contrast.' },
 ]
 
 const HEALTH_PRESETS = [

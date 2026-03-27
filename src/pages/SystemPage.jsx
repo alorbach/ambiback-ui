@@ -53,12 +53,15 @@ export default function SystemPage() {
     'setdevicename',
     'setbuttonmode',
     'setwififail',
+    'setrestorelastledmode',
     'setdebugsyslogserver',
     'setdebugsyslogport',
     'setdebugserial',
     'setdebugsyslog',
     'setdebugultra',
     'setwifiapenable',
+    'setprovisioningenable',
+    'setprovisioningtimeout',
     'setrelaytarget',
     'setrelaytodirect',
     'setrelaywifidirect',
@@ -145,12 +148,15 @@ export default function SystemPage() {
   const [deviceName, setDeviceName] = useState('')
   const [buttonMode, setButtonMode] = useState(0)
   const [wifiFail, setWifiFail] = useState(0)
+  const [restoreLastLedMode, setRestoreLastLedMode] = useState(false)
   const [debugSyslogServer, setDebugSyslogServer] = useState('')
   const [debugSyslogPort, setDebugSyslogPort] = useState(0)
   const [debugSerial, setDebugSerial] = useState(false)
   const [debugSyslog, setDebugSyslog] = useState(false)
   const [debugUltra, setDebugUltra] = useState(false)
   const [wifiApEnabled, setWifiApEnabled] = useState(false)
+  const [provisioningEnabled, setProvisioningEnabled] = useState(true)
+  const [provisioningTimeoutMinutes, setProvisioningTimeoutMinutes] = useState(5)
   const [relayTarget, setRelayTarget] = useState('')
   const [relayDirect, setRelayDirect] = useState(false)
   const [relayWifiDirect, setRelayWifiDirect] = useState(false)
@@ -171,12 +177,15 @@ export default function SystemPage() {
     setDeviceName(readString(params, 'devicename', ''))
     setButtonMode(readNumber(params, 'buttonmode', 0))
     setWifiFail(readNumber(params, 'wififailhandling', 0))
+    setRestoreLastLedMode(readBool(params, 'restorelastledmode', false))
     setDebugSyslogServer(readString(params, 'debugsyslogserver', readString(params, 'syslogserver', '')))
     setDebugSyslogPort(readNumber(params, 'debugsyslogport', 0))
     setDebugSerial(readBool(params, 'debugserial', false))
     setDebugSyslog(readBool(params, 'debugsyslog', false))
     setDebugUltra(readBool(params, 'debugultra', false))
     setWifiApEnabled(readBool(params, 'deviceapenabled', false))
+    setProvisioningEnabled(readBool(params, 'provisioningenabled', true))
+    setProvisioningTimeoutMinutes(readNumber(params, 'provisioningtimeoutminutes', 5))
     setRelayTarget(readString(params, 'ambibackrelayto', ''))
     setRelayDirect(readBool(params, 'ambibackrelaydirect', false))
     setRelayWifiDirect(readBool(params, 'ambibackrelaywifidirect', false))
@@ -315,6 +324,18 @@ export default function SystemPage() {
             <option value={1}>Reconnect/Reboot</option>
             <option value={2}>Reboot</option>
           </select>
+          <label className="checkbox">
+            <input
+              type="checkbox"
+              checked={restoreLastLedMode}
+              onChange={(event) => {
+                const next = event.target.checked
+                setRestoreLastLedMode(next)
+                queueParam('setrestorelastledmode', next ? 1 : 0)
+              }}
+            />
+            Restore last LED mode after reboot
+          </label>
         </div>
         <div className="button-row">
           <button
@@ -430,10 +451,38 @@ export default function SystemPage() {
               />
               Enable WiFi Direct AP
             </label>
+            <label className="checkbox">
+              <input
+                type="checkbox"
+                checked={provisioningEnabled}
+                onChange={(event) => {
+                  const next = event.target.checked
+                  setProvisioningEnabled(next)
+                  queueParam('setprovisioningenable', next ? 1 : 0)
+                }}
+              />
+              Enable Boot Provisioning Window
+            </label>
             <label>SSID</label>
             <input type="text" value={readString(params, 'deviceapssid', '')} disabled />
             <label>Password</label>
             <input type="text" value={readString(params, 'deviceappass', '')} disabled />
+            <label htmlFor="provisioningTimeoutMinutes">Provisioning Timeout (minutes)</label>
+            <select
+              id="provisioningTimeoutMinutes"
+              value={provisioningTimeoutMinutes}
+              onChange={(event) => {
+                const next = Number(event.target.value)
+                setProvisioningTimeoutMinutes(next)
+                queueParam('setprovisioningtimeout', next)
+              }}
+            >
+              {Array.from({ length: 60 }, (_, idx) => idx + 1).map((value) => (
+                <option key={value} value={value}>
+                  {value}
+                </option>
+              ))}
+            </select>
           </div>
           {settingsMessage && <div className="muted">{settingsMessage}</div>}
         </PersistedCollapsibleCard>
