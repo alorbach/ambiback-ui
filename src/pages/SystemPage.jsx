@@ -17,6 +17,7 @@ export default function SystemPage() {
   const [message, setMessage] = useState('')
   const [settingsMessage, setSettingsMessage] = useState('')
   const [resetting, setResetting] = useState(false)
+  const [summaryStatus, setSummaryStatus] = useState(null)
   const { params, refresh } = useDeviceParams()
   const { caps } = useCapabilitiesContext()
   const { advanced } = useUiSettings()
@@ -161,6 +162,18 @@ export default function SystemPage() {
   const [relayDirect, setRelayDirect] = useState(false)
   const [relayWifiDirect, setRelayWifiDirect] = useState(false)
   const [relayMode, setRelayMode] = useState(1)
+  const modeLabel = {
+    0: 'Off',
+    1: 'Video',
+    2: 'Ambient',
+    3: 'Camera',
+    4: 'Relay',
+    5: 'Demo',
+  }[readNumber(params, 'ledmode', -1)] || 'Unknown'
+  const wifiLabel =
+    readString(summaryStatus, 'wifinetwork', '') ||
+    readString(params, 'wifissid', readString(params, 'deviceip', 'Disconnected')) ||
+    'Disconnected'
 
   const handleAction = async (action) => {
     setMessage('')
@@ -192,6 +205,27 @@ export default function SystemPage() {
     setRelayMode(readNumber(params, 'ambibackrelaymode', 1))
   }, [params])
 
+  useEffect(() => {
+    let cancelled = false
+    if (!params) {
+      setSummaryStatus(null)
+      return
+    }
+
+    api
+      .getStatus()
+      .then((status) => {
+        if (!cancelled) setSummaryStatus(status)
+      })
+      .catch(() => {
+        if (!cancelled) setSummaryStatus(null)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [params])
+
   const queueParam = (param, value, setStatus = setSettingsMessage) => {
     if (timersRef.current[param]) {
       clearTimeout(timersRef.current[param])
@@ -210,13 +244,29 @@ export default function SystemPage() {
   return (
     <div className="page">
       <h1>System & Status</h1>
+      <dl className="mobile-status-strip">
+        <div className="mobile-status-pill">
+          <dt>Mode</dt>
+          <dd>{modeLabel}</dd>
+        </div>
+        <div className="mobile-status-pill">
+          <dt>WiFi</dt>
+          <dd>{wifiLabel}</dd>
+        </div>
+        <div className="mobile-status-pill">
+          <dt>Version</dt>
+          <dd>{readString(params, 'deviceversion', 'Unknown')}</dd>
+        </div>
+        <div className="mobile-status-pill">
+          <dt>Device</dt>
+          <dd>{readString(params, 'devicename', readString(params, 'devicetype', 'Unknown'))}</dd>
+        </div>
+      </dl>
       <div className="card-grid">
-        <PersistedCollapsibleCard
-          storageKey={SYSTEM_SECTION_STORAGE_KEY}
-          sectionKey="actions"
-          title="Actions"
-          defaultOpen={false}
-        >
+        <section className="card">
+          <header className="card-header">
+            <h2>Actions</h2>
+          </header>
           <div className="button-grid">
             {advanced && (
               <button type="button" onClick={() => handleAction(api.startWps)}>
@@ -231,7 +281,7 @@ export default function SystemPage() {
             </a>
           </div>
           {message && <div className="muted">{message}</div>}
-        </PersistedCollapsibleCard>
+        </section>
         <PersistedCollapsibleCard
           storageKey={SYSTEM_SECTION_STORAGE_KEY}
           sectionKey="status"

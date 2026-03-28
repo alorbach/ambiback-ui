@@ -296,7 +296,12 @@ export default function HuePage() {
   return (
     <div className="page">
       <h1>Hue Integration</h1>
-      <section className="card">
+      <p className="page-intro">Connect the bridge first, then scan devices and tune mappings only for the lights you actually use.</p>
+      <nav className="section-jump-nav" aria-label="Hue sections">
+        <a href="#hue-bridge" className="section-jump-link">Bridge</a>
+        <a href="#hue-devices" className="section-jump-link">Devices</a>
+      </nav>
+      <section className="card" id="hue-bridge">
         <header className="card-header">
           <h2>Hue Bridge</h2>
           <div className="card-actions">
@@ -463,7 +468,7 @@ export default function HuePage() {
         {discoverMessage && <div className="muted">{discoverMessage}</div>}
         {message && <div className="muted">{message}</div>}
       </section>
-      <section className="card">
+      <section className="card" id="hue-devices">
         <header className="card-header">
           <h2>Hue Devices</h2>
           <div className="card-actions">

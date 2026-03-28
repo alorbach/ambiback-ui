@@ -177,9 +177,6 @@ export default function LedSetupPage() {
             <button
               type="button"
               className={`tv-side tv-side-top ${sides.top ? 'tv-side-enabled' : 'tv-side-disabled'}`}
-              style={{
-                transform: `scaleX(${sideBrightness.top / 100})`,
-              }}
               onClick={() => {
                 const next = !sides.top
                 setSides({ ...sides, top: next })
@@ -187,14 +184,12 @@ export default function LedSetupPage() {
               }}
               aria-pressed={sides.top}
             >
-              Top
+              <span className="tv-side-fill" style={{ transform: `scaleX(${sideBrightness.top / 100})` }} />
+              <span className="tv-side-label">Top</span>
             </button>
             <button
               type="button"
               className={`tv-side tv-side-right ${sides.right ? 'tv-side-enabled' : 'tv-side-disabled'}`}
-              style={{
-                transform: `scaleY(${sideBrightness.right / 100})`,
-              }}
               onClick={() => {
                 const next = !sides.right
                 setSides({ ...sides, right: next })
@@ -202,14 +197,12 @@ export default function LedSetupPage() {
               }}
               aria-pressed={sides.right}
             >
-              Right
+              <span className="tv-side-fill" style={{ transform: `scaleY(${sideBrightness.right / 100})` }} />
+              <span className="tv-side-label">Right</span>
             </button>
             <button
               type="button"
               className={`tv-side tv-side-bottom ${sides.bottom ? 'tv-side-enabled' : 'tv-side-disabled'}`}
-              style={{
-                transform: `scaleX(${sideBrightness.bottom / 100})`,
-              }}
               onClick={() => {
                 const next = !sides.bottom
                 setSides({ ...sides, bottom: next })
@@ -217,14 +210,12 @@ export default function LedSetupPage() {
               }}
               aria-pressed={sides.bottom}
             >
-              Bottom
+              <span className="tv-side-fill" style={{ transform: `scaleX(${sideBrightness.bottom / 100})` }} />
+              <span className="tv-side-label">Bottom</span>
             </button>
             <button
               type="button"
               className={`tv-side tv-side-left ${sides.left ? 'tv-side-enabled' : 'tv-side-disabled'}`}
-              style={{
-                transform: `scaleY(${sideBrightness.left / 100})`,
-              }}
               onClick={() => {
                 const next = !sides.left
                 setSides({ ...sides, left: next })
@@ -232,7 +223,8 @@ export default function LedSetupPage() {
               }}
               aria-pressed={sides.left}
             >
-              Left
+              <span className="tv-side-fill" style={{ transform: `scaleY(${sideBrightness.left / 100})` }} />
+              <span className="tv-side-label">Left</span>
             </button>
             <div
               className={`tv-arrowhead tv-arrowhead-${hint.start.replace(' ', '-').toLowerCase()} tv-arrowhead-${hint.flow.toLowerCase()}`}

@@ -6,6 +6,10 @@
 
 **Repository split:** Firmware, embedded web, and API endpoints live in the main repo. UI logic, Firmware tab, capabilities gating, and API client live here. See the main repo's `AGENTS.md` section [Repository Split: Main vs ambiback-ui](../AGENTS.md#repository-split-main-vs-ambiback-ui) for the split and commit guidance.
 
+**Default ownership rule:** If the task is UI-only, this repo is the default target. Do not modify the legacy embedded UI under `../web/HTML/` or `../web/HTML_MIN/` unless the request explicitly asks for the firmware-hosted UI or for legacy parity.
+
+**When main repo changes are needed:** If the UI needs a new parameter, endpoint, or capability field, add that firmware/API support in the main repo first, then consume it here.
+
 Key concepts:
 - **Capabilities gating**: UI features are shown only if the device exposes
   corresponding fields in `/getparamatersasjson`.
@@ -62,6 +66,8 @@ cd D:\!cvsroot\_Misc\AmbiBack.Controller\ambiback-ui\dev
 
 ## Notes for Agents
 
+- Default to changing files in this repo for frontend requests such as pages, layouts, controls, routing, and capabilities gating.
+- Do not update `../web/HTML/` or `../web/HTML_MIN/` as part of normal UI work unless the task explicitly includes the embedded legacy UI.
 - Always use `npm run build` before proxy testing if UI changes were made.
 - Capabilities are derived from `/getparamatersasjson` fields. If a UI control
   is added, ensure the corresponding param exists or gate it accordingly.

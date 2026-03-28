@@ -34,6 +34,7 @@ export default function ModeControls() {
       return true
     })
   }, [caps.camera])
+  const activeMode = availableModes.find((mode) => mode.value === currentMode) || availableModes[0] || null
 
   const setMode = async (mode) => {
     setLoading(true)
@@ -66,6 +67,7 @@ export default function ModeControls() {
     <section className="card card-full">
       <header className="card-header">
         <h2>LED Mode</h2>
+        {activeMode && <div className="mode-current-badge">Current: {activeMode.label}</div>}
       </header>
       <div className="mode-tile-grid">
         {availableModes.map((mode) => (

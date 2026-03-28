@@ -58,7 +58,7 @@ if (-not (Test-Path (Join-Path $certDir "$UiHost.crt"))) {
     -subj "/CN=$UiHost"
 }
 
-$uiHttpBlock = "root $uiDir; index index.html; location / { try_files `$uri /index.html; }"
+$uiHttpBlock = "root $uiDir; index index.html; location /assets/ { try_files `$uri =404; add_header Cache-Control 'no-store'; } location = /registerSW.js { default_type application/javascript; return 204; } location = /sw.js { return 404; } location = /manifest.webmanifest { try_files `$uri =404; add_header Cache-Control 'no-store'; } location / { try_files `$uri /index.html; add_header Cache-Control 'no-store'; }"
 $uiHttpsBlock = $uiHttpBlock
 if ($uiMode -eq "proxy") {
   $uiHttpBlock = "location ^~ /ambiback-ui/ { proxy_ssl_server_name on; proxy_set_header Host alorbach.github.io; proxy_pass https://alorbach.github.io/ambiback-ui/; } location /assets/ { proxy_ssl_server_name on; proxy_set_header Host alorbach.github.io; proxy_pass https://alorbach.github.io/ambiback-ui/assets/; } location = /registerSW.js { proxy_ssl_server_name on; proxy_set_header Host alorbach.github.io; proxy_pass https://alorbach.github.io/ambiback-ui/registerSW.js; } location = /manifest.webmanifest { proxy_ssl_server_name on; proxy_set_header Host alorbach.github.io; proxy_pass https://alorbach.github.io/ambiback-ui/manifest.webmanifest; } location = /favicon.ico { proxy_ssl_server_name on; proxy_set_header Host alorbach.github.io; proxy_pass https://alorbach.github.io/ambiback-ui/favicon.ico; } location / { proxy_ssl_server_name on; proxy_set_header Host alorbach.github.io; proxy_pass https://alorbach.github.io/ambiback-ui/; }"

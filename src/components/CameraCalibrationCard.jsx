@@ -255,7 +255,7 @@ export default function CameraCalibrationCard({ baseUrl, params, refresh, onMess
   }
 
   return (
-    <section className="card camera-calibration-card">
+    <section className="card camera-calibration-card" id="camera-calibration-card">
       <h2>Camera Live Preview</h2>
       <p className="muted" style={{ marginBottom: 12 }}>
         Drag the corner points to select the edges of the TV. Points define the capture area for color extraction.

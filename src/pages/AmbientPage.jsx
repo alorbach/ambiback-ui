@@ -64,6 +64,7 @@ export default function AmbientPage() {
   const [infoOpen, setInfoOpen] = useState(null)
   const [sectionOpen, setSectionOpen] = useState(readInitialSectionOpen)
   const timersRef = useRef({})
+  const selectedHealthPreset = HEALTH_PRESETS.find((preset) => preset.value === infoOpen) || null
 
   useEffect(() => {
     if (!params) return
@@ -232,6 +233,11 @@ export default function AmbientPage() {
               </div>
             ))}
           </div>
+          {selectedHealthPreset && (
+            <div className="form-message">
+              <strong>{selectedHealthPreset.label}:</strong> {selectedHealthPreset.tooltip}
+            </div>
+          )}
           <div className="form-grid form-grid-ambient" style={{ marginTop: '12px' }}>
             <label htmlFor="ambientHealthIntensity">Health Pulse Floor (1–100)</label>
             <p style={{ fontSize: '0.8em', margin: '0 0 4px', opacity: 0.7 }}>Controls how dark health presets (12–15) dip — lower = brighter floor, higher = reaches black</p>

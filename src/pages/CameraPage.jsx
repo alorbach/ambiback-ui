@@ -342,13 +342,22 @@ export default function CameraPage() {
   return (
     <div className="page">
       <h1>Camera</h1>
+      <p className="page-intro">Start with calibration and presets. Open the expert sections only when you need detailed tuning.</p>
+      <nav className="section-jump-nav" aria-label="Camera sections">
+        <a href="#camera-calibration-card" className="section-jump-link">Calibration</a>
+        <a href="#camera-presets" className="section-jump-link">Presets</a>
+        <a href="#camera-zones" className="section-jump-link">Zones</a>
+        <a href="#camera-colors" className="section-jump-link">Color</a>
+        <a href="#camera-image" className="section-jump-link">Image</a>
+        <a href="#camera-exposure" className="section-jump-link">Exposure</a>
+      </nav>
       <CameraCalibrationCard
         baseUrl={baseUrl}
         params={params}
         refresh={refresh}
         onMessage={setMessage}
       />
-      <details className="card card-collapsible" open>
+      <details className="card card-collapsible" id="camera-presets">
         <summary className="card-collapsible-summary">
           <span className="card-collapsible-chevron" aria-hidden>▶</span>
           Camera Calibration Options
@@ -514,7 +523,7 @@ export default function CameraPage() {
         </div>
       </details>
       {advanced && (
-      <details className="card card-collapsible">
+      <details className="card card-collapsible" id="camera-controls">
         <summary className="card-collapsible-summary">
           <span className="card-collapsible-chevron" aria-hidden>▶</span>
           Camera Controls
@@ -658,7 +667,7 @@ export default function CameraPage() {
         </div>
       </details>
       )}
-      <details className="card card-collapsible">
+      <details className="card card-collapsible" id="camera-zones">
         <summary className="card-collapsible-summary">
           <span className="card-collapsible-chevron" aria-hidden>▶</span>
           Camera Zones & Smoothing
@@ -803,7 +812,7 @@ export default function CameraPage() {
         </button>
         </div>
       </details>
-      <details className="card card-collapsible">
+      <details className="card card-collapsible" id="camera-auto">
         <summary className="card-collapsible-summary">
           <span className="card-collapsible-chevron" aria-hidden>▶</span>
           Auto On/Off
@@ -849,7 +858,7 @@ export default function CameraPage() {
         </button>
         </div>
       </details>
-      <details className="card card-collapsible">
+      <details className="card card-collapsible" id="camera-colors">
         <summary className="card-collapsible-summary">
           <span className="card-collapsible-chevron" aria-hidden>▶</span>
           Color Thresholds & Enhancement
@@ -1154,7 +1163,7 @@ export default function CameraPage() {
         </button>
         </div>
       </details>
-      <details className="card card-collapsible">
+      <details className="card card-collapsible" id="camera-image">
         <summary className="card-collapsible-summary">
           <span className="card-collapsible-chevron" aria-hidden>▶</span>
           Image Adjustments
@@ -1458,7 +1467,7 @@ export default function CameraPage() {
         )}
         </div>
       </details>
-      <details className="card card-collapsible">
+      <details className="card card-collapsible" id="camera-exposure">
         <summary className="card-collapsible-summary">
           <span className="card-collapsible-chevron" aria-hidden>▶</span>
           Exposure

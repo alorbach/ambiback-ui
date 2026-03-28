@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import DeviceSelector from './DeviceSelector.jsx'
 import ModeControls from './ModeControls.jsx'
+import MobileDeviceBar from './MobileDeviceBar.jsx'
 import { useCapabilitiesContext } from '../contexts/CapabilitiesContext.jsx'
 import { useUiSettings } from '../contexts/UiSettingsContext.jsx'
 
@@ -21,25 +22,34 @@ export default function Layout({ children }) {
   const { advanced, setAdvanced, statusRefreshInterval, setStatusRefreshInterval, refreshIntervalOptions } =
     useUiSettings()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
-  const [modePanelCompact, setModePanelCompact] = useState(false)
+  const [compactModePanel, setCompactModePanel] = useState(false)
   const visibleItems = navItems.filter((item) =>
     loading ? item.cap !== 'camera' && item.cap !== 'hue' && item.cap !== 'dreamscreen' : caps[item.cap]
   )
 
   useEffect(() => {
-    // Hysteresis prevents flickering near the threshold:
-    // enter compact at >40px scroll, exit compact only below 10px.
-    const updateModePanelState = () => {
-      setModePanelCompact((prev) => {
-        if (!prev && window.scrollY > 40) return true
-        if (prev && window.scrollY < 10) return false
-        return prev
-      })
+    const onResize = () => {
+      if (window.innerWidth > 900) {
+        setMobileNavOpen(false)
+      }
+    }
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+
+  useEffect(() => {
+    const updateCompactState = () => {
+      const isMobile = window.innerWidth <= 900
+      setCompactModePanel(isMobile && window.scrollY > 24)
     }
 
-    updateModePanelState()
-    window.addEventListener('scroll', updateModePanelState, { passive: true })
-    return () => window.removeEventListener('scroll', updateModePanelState)
+    updateCompactState()
+    window.addEventListener('scroll', updateCompactState, { passive: true })
+    window.addEventListener('resize', updateCompactState)
+    return () => {
+      window.removeEventListener('scroll', updateCompactState)
+      window.removeEventListener('resize', updateCompactState)
+    }
   }, [])
 
   return (
@@ -124,7 +134,8 @@ export default function Layout({ children }) {
             <p className="params-loader-text">Connecting to device…</p>
           </div>
         )}
-        <div className={`mode-panel-sticky ${modePanelCompact ? 'mode-panel-sticky-compact' : ''}`}>
+        <MobileDeviceBar onOpenMenu={() => setMobileNavOpen(true)} />
+        <div className={`mode-panel-sticky ${compactModePanel ? 'compact' : ''}`}>
           <ModeControls />
         </div>
         {children}
